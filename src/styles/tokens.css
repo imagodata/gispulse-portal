@@ -1,0 +1,86 @@
+/* GISPulse portal tokens.
+ *
+ * Imports the shared design-system tokens (typography, spacing, radius,
+ * shadow scales) so portal/src/index.css references like
+ * `var(--gp-text-label-xs)` actually resolve. Portal-specific overrides
+ * for brand/node/geom/status/surface follow below and intentionally
+ * shadow the design-system defaults — the portal vocabulary
+ * (--gp-node-source/transform/output/trigger/control/code) is finer
+ * grained than the design-system one (--gp-node-dataset/capability).
+ */
+@import "../../../design-system/tokens.css";
+
+:root {
+  /* Brand */
+  --gp-brand: oklch(0.45 0.18 240);
+  --gp-brand-subtle: oklch(0.92 0.04 240);
+
+  /* Node type colors */
+  --gp-node-source: oklch(0.72 0.18 156);
+  --gp-node-transform: oklch(0.62 0.2 240);
+  --gp-node-output: oklch(0.55 0.20 300);
+  --gp-node-trigger: oklch(0.62 0.22 15);
+  --gp-node-control: oklch(0.65 0.18 290);
+  --gp-node-code: oklch(0.5 0.03 240);
+
+  /* Geometry type colors */
+  --gp-geom-point: oklch(0.65 0.2 15);
+  --gp-geom-line: oklch(0.62 0.2 240);
+  --gp-geom-polygon: oklch(0.72 0.18 156);
+  --gp-geom-raster: oklch(0.65 0.18 70);
+
+  /* Semantic status colors (also defined in index.css for Tailwind) */
+  --gp-status-success: oklch(0.72 0.19 145);
+  --gp-status-warning: oklch(0.80 0.18 85);
+  --gp-status-error: oklch(0.577 0.245 27.325);
+  --gp-status-info: oklch(0.62 0.19 240);
+  --gp-status-connected: oklch(0.72 0.19 145);
+  --gp-status-disconnected: oklch(0.577 0.245 27.325);
+
+  /* Surface tokens */
+  --gp-surface-panel: oklch(0.98 0 0);
+  --gp-surface-sidebar: oklch(0.96 0 0);
+  --gp-surface-toolbar: oklch(0.99 0 0);
+
+  /* Z-index scale — aligned with design-system/tokens.css */
+  --gp-z-base: 0;
+  --gp-z-dropdown: 100;
+  --gp-z-sticky: 200;
+  --gp-z-overlay: 300;
+  --gp-z-modal: 400;
+  --gp-z-onboarding: 450;
+  --gp-z-toast: 500;
+}
+
+.dark {
+  /* Brand — brighter for dark backgrounds */
+  --gp-brand: oklch(0.62 0.18 240);
+  --gp-brand-subtle: oklch(0.25 0.06 240);
+
+  /* Node type colors — brighter for dark backgrounds */
+  --gp-node-source: oklch(0.78 0.16 156);
+  --gp-node-transform: oklch(0.70 0.18 240);
+  --gp-node-output: oklch(0.65 0.18 300);
+  --gp-node-trigger: oklch(0.70 0.20 15);
+  --gp-node-control: oklch(0.72 0.16 290);
+  --gp-node-code: oklch(0.60 0.03 240);
+
+  /* Geometry type colors — brighter */
+  --gp-geom-point: oklch(0.72 0.18 15);
+  --gp-geom-line: oklch(0.70 0.18 240);
+  --gp-geom-polygon: oklch(0.78 0.16 156);
+  --gp-geom-raster: oklch(0.72 0.16 70);
+
+  /* Semantic status colors — brighter for dark backgrounds */
+  --gp-status-success: oklch(0.78 0.17 145);
+  --gp-status-warning: oklch(0.85 0.16 85);
+  --gp-status-error: oklch(0.704 0.191 22.216);
+  --gp-status-info: oklch(0.70 0.17 240);
+  --gp-status-connected: oklch(0.78 0.17 145);
+  --gp-status-disconnected: oklch(0.704 0.191 22.216);
+
+  /* Surface tokens — dark */
+  --gp-surface-panel: oklch(0.18 0 0);
+  --gp-surface-sidebar: oklch(0.16 0 0);
+  --gp-surface-toolbar: oklch(0.20 0 0);
+}

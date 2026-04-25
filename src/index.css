@@ -1,0 +1,183 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/rubik";
+@import "./styles/tokens.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+    --font-heading: var(--font-sans);
+    --font-sans: 'Rubik Variable', sans-serif;
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    --color-gp-brand: var(--gp-brand);
+    --color-gp-brand-subtle: var(--gp-brand-subtle);
+    --color-gp-node-source: var(--gp-node-source);
+    --color-gp-node-transform: var(--gp-node-transform);
+    --color-gp-node-output: var(--gp-node-output);
+    --color-gp-node-trigger: var(--gp-node-trigger);
+    --color-gp-node-control: var(--gp-node-control);
+    --color-gp-node-code: var(--gp-node-code);
+    --color-gp-geom-point: var(--gp-geom-point);
+    --color-gp-geom-line: var(--gp-geom-line);
+    --color-gp-geom-polygon: var(--gp-geom-polygon);
+    --color-gp-success: var(--gp-success);
+    --color-gp-warning: var(--gp-warning);
+    --color-gp-info: var(--gp-info);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+    /* GISPulse spacing tokens */
+    --spacing-panel: var(--gp-spacing-panel);
+    --spacing-toolbar: var(--gp-spacing-toolbar);
+    /* GISPulse typography tokens — usable as text-label-sm etc. */
+    --text-label-xs: var(--gp-text-label-xs);
+    --text-label-sm: var(--gp-text-label-sm);
+    --text-label: var(--gp-text-label);
+    --text-label-lg: var(--gp-text-label-lg);
+    /* GISPulse sizing tokens */
+    --width-popover: var(--gp-width-popover);
+    --width-modal-sm: var(--gp-width-modal-sm);
+    --width-modal-md: var(--gp-width-modal-md);
+    --width-modal-lg: var(--gp-width-modal-lg);
+    --width-sidebar: var(--gp-width-sidebar);
+    --width-inspector: var(--gp-width-inspector);
+}
+
+:root {
+    /* ── GISPulse Design Tokens ─────────────────────────── */
+    /* Typography scale — replaces text-[9px], text-[10px], text-[11px], text-[12px] */
+    --gp-text-label-xs: 0.5rem;      /* 8px */
+    --gp-text-label-sm: 0.5625rem;   /* 9px */
+    --gp-text-label: 0.625rem;       /* 10px */
+    --gp-text-label-lg: 0.6875rem;   /* 11px */
+    /* Spacing */
+    --gp-spacing-panel: 0.5rem;      /* 8px — standard panel padding */
+    --gp-spacing-toolbar: 0.25rem;   /* 4px — toolbar item gaps */
+    /* Sizing — modals & popovers */
+    --gp-width-popover: 11.25rem;    /* 180px */
+    --gp-width-modal-sm: 12.5rem;    /* 200px */
+    --gp-width-modal-md: 45rem;      /* 720px */
+    --gp-width-modal-lg: 67.5rem;    /* 1080px */
+    /* Sizing — workspace panels */
+    --gp-width-sidebar: 15rem;       /* 240px — left sidebars */
+    --gp-width-inspector: 16rem;     /* 256px — right inspector panels */
+    /* Semantic status colors */
+    --gp-success: oklch(0.72 0.19 145);
+    --gp-warning: oklch(0.80 0.18 85);
+    --gp-info: oklch(0.62 0.19 240);
+
+    /* ── shadcn/base theme ──────────────────────────────── */
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.145 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.145 0 0);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.145 0 0);
+    --primary: oklch(0.205 0 0);
+    --primary-foreground: oklch(0.985 0 0);
+    --secondary: oklch(0.97 0 0);
+    --secondary-foreground: oklch(0.205 0 0);
+    --muted: oklch(0.97 0 0);
+    --muted-foreground: oklch(0.556 0 0);
+    --accent: oklch(0.97 0 0);
+    --accent-foreground: oklch(0.205 0 0);
+    --destructive: oklch(0.577 0.245 27.325);
+    --border: oklch(0.922 0 0);
+    --input: oklch(0.922 0 0);
+    --ring: oklch(0.708 0 0);
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
+    --radius: 0.625rem;
+    --sidebar: oklch(0.985 0 0);
+    --sidebar-foreground: oklch(0.145 0 0);
+    --sidebar-primary: oklch(0.205 0 0);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.97 0 0);
+    --sidebar-accent-foreground: oklch(0.205 0 0);
+    --sidebar-border: oklch(0.922 0 0);
+    --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+    --background: oklch(0.145 0 0);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.205 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.205 0 0);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.922 0 0);
+    --primary-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.269 0 0);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.269 0 0);
+    --muted-foreground: oklch(0.708 0 0);
+    --accent: oklch(0.269 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.556 0 0);
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
+    --sidebar: oklch(0.205 0 0);
+    --sidebar-foreground: oklch(0.985 0 0);
+    --sidebar-primary: oklch(0.488 0.243 264.376);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.269 0 0);
+    --sidebar-accent-foreground: oklch(0.985 0 0);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    }
+  body {
+    @apply bg-background text-foreground;
+    }
+  html {
+    @apply font-sans;
+    }
+}
