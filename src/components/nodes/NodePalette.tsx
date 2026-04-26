@@ -11,9 +11,12 @@ import {
   Database, Cog, Download, Zap, GitBranch, Code,
   Search, ChevronDown, BookOpen, Star, Trash2,
   Table2, MapPin, BarChart3, Target, ShieldCheck, FileCode, Layers, Calculator,
+  Sparkles,
 } from "lucide-react"
 import type { NodeCategory } from "./nodeStyles"
 import { useProjectStore } from "@/stores/projectStore"
+import { listCapabilities } from "@/api/datasets"
+import type { CapabilitySchema } from "@/types/dataset"
 
 interface PaletteNode {
   type: string
@@ -384,6 +387,237 @@ function TemplatesSection({ search }: { search: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// Registry-driven capabilities section (#441)
+// ---------------------------------------------------------------------------
+
+/**
+ * Bucket a capability name into a coarse category for UI grouping.
+ * Falls back to "Other" so every registry entry surfaces.
+ */
+function _categorizeCapability(name: string): string {
+  if (
+    /^(add_field|drop_field|select_columns|rename_field|cast_field|attribute_join|pivot|unpivot|lookup_table|coalesce_fields|case_when|describe)$/.test(
+      name,
+    )
+  ) {
+    return "Schema & attrs"
+  }
+  if (/^(overlay_|erase|clip|intersects|spatial_join|dissolve|symmetric_difference|vector_diff)$/.test(name)) {
+    return "Overlay & spatial joins"
+  }
+  if (
+    /^(multipart_to_singleparts|singleparts_to_multipart|boundary|extract_holes|force_geometry_type|affine_transform|swap_xy|reverse_lines|add_z|drop_z|add_m|drop_m|assign_projection|reproject|simplify|alpha_shape|concave_hull|convex_hull|offset_curve|snap_to_grid|delaunay|voronoi|polygon_fix_gaps|classify_by_ring)$/.test(
+      name,
+    )
+  ) {
+    return "Geometry transforms"
+  }
+  if (/^(buffer|union|difference|centroid|area_length|isochrone|nearest_neighbor|od_matrix|mst|spatial_weights)$/.test(name)) {
+    return "Vector ops"
+  }
+  if (/^temporal_/.test(name)) {
+    return "Temporal"
+  }
+  if (/^(cluster_|morans_i|getis_ord|head_tail_breaks|normalize|kde_heatmap)/.test(name)) {
+    return "Stats & clustering"
+  }
+  if (/^(grid_create|hexgrid_create|spatial_aggregate|sort|deduplicate|random_sample|top_n)$/.test(name)) {
+    return "Aggregation & sampling"
+  }
+  if (/^(classify|bivariate_choropleth|graduated_size|continuous_ramp)/.test(name)) {
+    return "Classification & viz"
+  }
+  if (/^pointcloud_/.test(name)) {
+    return "Point cloud"
+  }
+  if (/^raster_|zonal_stats/.test(name)) {
+    return "Raster"
+  }
+  if (/_validation$|^validation_/.test(name)) {
+    return "Validation"
+  }
+  if (/^postgis_sql$|^calculate$/.test(name)) {
+    return "Custom expressions"
+  }
+  return "Other capabilities"
+}
+
+const CATEGORY_ORDER = [
+  "Schema & attrs",
+  "Vector ops",
+  "Geometry transforms",
+  "Overlay & spatial joins",
+  "Aggregation & sampling",
+  "Classification & viz",
+  "Stats & clustering",
+  "Temporal",
+  "Validation",
+  "Raster",
+  "Point cloud",
+  "Custom expressions",
+  "Other capabilities",
+] as const
+
+function RegistryCapabilitiesSection({ search }: { search: string }) {
+  const [collapsed, setCollapsed] = useState(true)
+  const [collapsedCats, setCollapsedCats] = useState<Set<string>>(new Set())
+  const [caps, setCaps] = useState<CapabilitySchema[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    if (caps.length > 0 || loading) return
+    setLoading(true)
+    listCapabilities()
+      .then((data) => {
+        if (cancelled) return
+        setCaps(data ?? [])
+      })
+      .catch((err) => {
+        if (cancelled) return
+        setError(err instanceof Error ? err.message : String(err))
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const onDragStart = (event: React.DragEvent, cap: CapabilitySchema) => {
+    const payload = {
+      type: "capability",
+      label: cap.name,
+      data: { capability: cap.name, label: cap.name },
+    }
+    event.dataTransfer.setData("application/reactflow", JSON.stringify(payload))
+    event.dataTransfer.effectAllowed = "move"
+  }
+
+  const filteredCaps = caps.filter((c) => {
+    if (!search) return true
+    const s = search.toLowerCase()
+    return (
+      c.name.toLowerCase().includes(s) ||
+      (c.description?.toLowerCase().includes(s) ?? false)
+    )
+  })
+
+  // Group by inferred category, keep CATEGORY_ORDER stable
+  const grouped = new Map<string, CapabilitySchema[]>()
+  for (const cap of filteredCaps) {
+    const cat = _categorizeCapability(cap.name)
+    if (!grouped.has(cat)) grouped.set(cat, [])
+    grouped.get(cat)!.push(cap)
+  }
+  for (const list of grouped.values()) {
+    list.sort((a, b) => a.name.localeCompare(b.name))
+  }
+  const orderedCats = CATEGORY_ORDER.filter((c) => grouped.has(c))
+
+  const toggleCat = (cat: string) => {
+    setCollapsedCats((prev) => {
+      const next = new Set(prev)
+      if (next.has(cat)) next.delete(cat)
+      else next.add(cat)
+      return next
+    })
+  }
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setCollapsed((c) => !c)}
+        className="w-full flex items-center gap-1.5 px-2.5 py-1.5 text-label font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent transition-colors border-t mt-1"
+      >
+        <Sparkles className="h-3 w-3 text-cyan-500" />
+        <span className="flex-1 text-left">
+          All capabilities{caps.length > 0 ? ` (${caps.length})` : ""}
+        </span>
+        <ChevronDown
+          className={`h-3 w-3 transition-transform ${collapsed ? "-rotate-90" : ""}`}
+        />
+      </button>
+      {!collapsed && (
+        <div>
+          {loading && (
+            <p className="px-2.5 py-2 text-label-sm text-muted-foreground">
+              Loading registry…
+            </p>
+          )}
+          {error && (
+            <p className="px-2.5 py-2 text-label-sm text-destructive">
+              {error}
+            </p>
+          )}
+          {!loading && !error && orderedCats.length === 0 && (
+            <p className="px-2.5 py-2 text-label-sm text-muted-foreground">
+              {search ? "No match." : "No capabilities returned by API."}
+            </p>
+          )}
+          {orderedCats.map((cat) => {
+            const items = grouped.get(cat) ?? []
+            const catCollapsed = collapsedCats.has(cat)
+            return (
+              <div key={cat}>
+                <button
+                  type="button"
+                  onClick={() => toggleCat(cat)}
+                  className="w-full flex items-center gap-1.5 px-3 py-1 text-label-sm font-medium text-muted-foreground hover:bg-accent transition-colors"
+                >
+                  <span className="flex-1 text-left">
+                    {cat}{" "}
+                    <span className="text-muted-foreground/60">
+                      ({items.length})
+                    </span>
+                  </span>
+                  <ChevronDown
+                    className={`h-3 w-3 transition-transform ${
+                      catCollapsed ? "-rotate-90" : ""
+                    }`}
+                  />
+                </button>
+                {!catCollapsed && (
+                  <div className="px-1.5 pb-1.5 space-y-0.5">
+                    {items.map((cap) => (
+                      <div
+                        key={cap.name}
+                        draggable
+                        onDragStart={(e) => onDragStart(e, cap)}
+                        title={cap.description ?? cap.name}
+                        tabIndex={0}
+                        role="option"
+                        className="flex items-center gap-2 rounded-md px-2 py-1 cursor-grab active:cursor-grabbing hover:bg-accent focus:bg-accent focus:outline-none transition-colors group"
+                      >
+                        <Cog className="h-3.5 w-3.5 shrink-0 text-cyan-500/70 group-hover:text-cyan-500" />
+                        <div className="min-w-0">
+                          <p className="text-label-lg font-mono text-foreground truncate">
+                            {cap.name}
+                          </p>
+                          {cap.description && (
+                            <p className="text-label-sm text-muted-foreground truncate">
+                              {cap.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // NodePalette
 // ---------------------------------------------------------------------------
 
@@ -527,6 +761,9 @@ export function NodePalette({ className }: { className?: string }) {
 
         {/* My Rules (R-4 #135) */}
         <MyRulesSection search={search} />
+
+        {/* Registry-driven capabilities (#441) */}
+        <RegistryCapabilitiesSection search={search} />
 
         {/* Grouped categories: Forge then Pipeline */}
         {(() => {
