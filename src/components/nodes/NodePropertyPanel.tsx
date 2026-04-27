@@ -7,7 +7,7 @@
  *   #135 — "Save as Rule" context action (POST /rules/from-node)
  */
 
-import { useCallback, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { Play, BookmarkPlus, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
@@ -20,6 +20,11 @@ import { useProjectStore } from "@/stores/projectStore"
 import { NODE_STYLES, type NodeCategory } from "./nodeStyles"
 import { SQLEditor } from "../sql/SQLEditor"
 import { runScenarioNode, createRuleFromNode } from "@/api/client"
+import { SchemaForm } from "./SchemaForm"
+import { isRenderableSchema, validateAgainstSchema, type JSONSchema } from "./schemaFormUtils"
+import { useCapabilities } from "@/hooks/useCapabilities"
+import { useLocaleStore } from "@/stores/localeStore"
+import { makeCapabilityTranslator } from "@/i18n/capabilityLabels"
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -116,10 +121,20 @@ export function NodePropertyPanel({ nodeId, nodeType, nodeData }: NodePropertyPa
 
   const [runningNode, setRunningNode] = useState(false)
   const [savingRule, setSavingRule] = useState(false)
+  const { caps, byName, loading: capsLoading } = useCapabilities()
+  const locale = useLocaleStore((s) => s.locale)
+  const toggleLocale = useLocaleStore((s) => s.toggleLocale)
 
   const data = nodeData ?? {}
   const label = (data.label as string) ?? "Node"
   const config = (data.config as Record<string, unknown>) ?? {}
+  const capabilityName = (data.capability as string) ?? ""
+  const capabilitySchema = byName[capabilityName]?.json_schema as JSONSchema | undefined
+  const schemaErrors = useMemo(
+    () => (isRenderableSchema(capabilitySchema) ? validateAgainstSchema(capabilitySchema, config) : {}),
+    [capabilitySchema, config],
+  )
+  const hasSchemaErrors = Object.keys(schemaErrors).length > 0
 
   const updateData = useCallback((key: string, value: unknown) => {
     updateNodeData(nodeId, key, value)
@@ -133,6 +148,15 @@ export function NodePropertyPanel({ nodeId, nodeType, nodeData }: NodePropertyPa
   const handleRunNode = useCallback(async () => {
     if (!activeScenarioId) {
       toast.error("Save the scenario first before running a node.")
+      return
+    }
+    if (hasSchemaErrors) {
+      const fields = Object.keys(schemaErrors).join(", ")
+      toast.error(
+        locale === "fr"
+          ? `Paramètres invalides : ${fields}`
+          : `Invalid parameters: ${fields}`,
+      )
       return
     }
     setRunningNode(true)
@@ -155,13 +179,22 @@ export function NodePropertyPanel({ nodeId, nodeType, nodeData }: NodePropertyPa
     } finally {
       setRunningNode(false)
     }
-  }, [activeScenarioId, nodeId, setNodeExecState])
+  }, [activeScenarioId, nodeId, setNodeExecState, hasSchemaErrors, schemaErrors, locale])
 
   // R-4 #135: Save node as Rule
   const handleSaveAsRule = useCallback(async () => {
     const capability = (data.capability as string) ?? nodeType ?? ""
     if (!capability || capability === "datasetSource" || capability === "output") {
       toast.error("Only capability nodes can be saved as rules.")
+      return
+    }
+    if (hasSchemaErrors) {
+      const fields = Object.keys(schemaErrors).join(", ")
+      toast.error(
+        locale === "fr"
+          ? `Paramètres invalides : ${fields}`
+          : `Invalid parameters: ${fields}`,
+      )
       return
     }
     setSavingRule(true)
@@ -179,7 +212,7 @@ export function NodePropertyPanel({ nodeId, nodeType, nodeData }: NodePropertyPa
     } finally {
       setSavingRule(false)
     }
-  }, [data, nodeType, label, config, fetchRules])
+  }, [data, nodeType, label, config, fetchRules, hasSchemaErrors, schemaErrors, locale])
 
   return (
     <div>
@@ -212,8 +245,14 @@ export function NodePropertyPanel({ nodeId, nodeType, nodeData }: NodePropertyPa
           size="sm"
           className="h-7 text-xs flex-1 gap-1"
           onClick={handleRunNode}
-          disabled={runningNode || !activeScenarioId}
-          title={!activeScenarioId ? "Save scenario first" : "Run only this node"}
+          disabled={runningNode || !activeScenarioId || hasSchemaErrors}
+          title={
+            !activeScenarioId
+              ? "Save scenario first"
+              : hasSchemaErrors
+                ? (locale === "fr" ? "Corrigez les paramètres invalides" : "Fix invalid parameters")
+                : "Run only this node"
+          }
         >
           {runningNode ? (
             <Loader2 size={11} className="animate-spin" />
@@ -228,8 +267,12 @@ export function NodePropertyPanel({ nodeId, nodeType, nodeData }: NodePropertyPa
             size="sm"
             className="h-7 text-xs gap-1"
             onClick={handleSaveAsRule}
-            disabled={savingRule}
-            title="Save this node configuration as a reusable rule"
+            disabled={savingRule || hasSchemaErrors}
+            title={
+              hasSchemaErrors
+                ? (locale === "fr" ? "Corrigez les paramètres invalides" : "Fix invalid parameters")
+                : "Save this node configuration as a reusable rule"
+            }
           >
             {savingRule ? (
               <Loader2 size={11} className="animate-spin" />
@@ -343,21 +386,61 @@ export function NodePropertyPanel({ nodeId, nodeType, nodeData }: NodePropertyPa
         <>
           <SectionTitle>Capability</SectionTitle>
           <Field label="Capability">
-            <select
-              value={(data.capability as string) ?? ""}
-              onChange={(e) => { updateData("capability", e.target.value); updateData("label", e.target.value) }}
-              className="w-full h-8 rounded-md border bg-background px-2 text-xs"
-            >
-              <option value="">Select...</option>
-              {["buffer", "intersect", "spatial_join", "filter", "dissolve", "reproject", "classify", "clip", "union", "difference", "centroid", "simplify"].map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
+            {(() => {
+              const fallback = ["buffer", "intersect", "spatial_join", "filter", "dissolve", "reproject", "classify", "clip", "union", "difference", "centroid", "simplify"]
+              const options = caps.length > 0
+                ? [...caps].sort((a, b) => a.name.localeCompare(b.name)).map((c) => c.name)
+                : fallback
+              return (
+                <select
+                  value={(data.capability as string) ?? ""}
+                  onChange={(e) => { updateData("capability", e.target.value); updateData("label", e.target.value) }}
+                  className="w-full h-8 rounded-md border bg-background px-2 text-xs"
+                  aria-busy={capsLoading || undefined}
+                >
+                  <option value="">{capsLoading && caps.length === 0 ? "Loading..." : "Select..."}</option>
+                  {options.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              )
+            })()}
           </Field>
 
-          {/* Full parameter set */}
+          {/* Full parameter set — schema-driven, with legacy CAPABILITY_PARAMS fallback */}
           {(() => {
-            const cap = (data.capability as string) ?? ""
+            const cap = capabilityName
+            if (!cap) return null
+            const schema = capabilitySchema
+            if (isRenderableSchema(schema)) {
+              const translate = makeCapabilityTranslator(cap, locale)
+              return (
+                <>
+                  <div className="flex items-center justify-between mt-3 mb-1.5">
+                    <h4 className="text-label font-semibold uppercase tracking-wider text-muted-foreground">
+                      {locale === "fr" ? "Paramètres" : "Parameters"}
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={toggleLocale}
+                      className="text-label-sm text-muted-foreground hover:text-foreground hover:underline"
+                      aria-label={locale === "fr" ? "Switch to English labels" : "Passer en français"}
+                      title={locale === "fr" ? "EN" : "FR"}
+                    >
+                      {locale === "fr" ? "EN" : "FR"}
+                    </button>
+                  </div>
+                  <SchemaForm
+                    schema={schema}
+                    value={config}
+                    onChange={updateConfig}
+                    translate={translate}
+                  />
+                </>
+              )
+            }
+            // Fallback: legacy hardcoded params (used when registry is empty,
+            // offline, or capability has no JSON schema yet).
             const params = CAPABILITY_PARAMS[cap] ?? []
             if (params.length === 0) return null
             return (
