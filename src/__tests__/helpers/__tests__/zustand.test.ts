@@ -51,4 +51,18 @@ describe("setupStoreReset — single store", () => {
     // @ts-expect-error — checking the key was removed
     expect(useLocaleStore.getState().extraKey).toBeUndefined()
   })
+
+  it("preserves action functions across reset (regression — JSON deep-clone would have dropped them)", () => {
+    // The localeStore declares setLocale + toggleLocale on the state
+    // object via `create((set, get) => ({ ..., setLocale: (l) => ... }))`.
+    // After our shallow-snapshot reset, both actions should still be
+    // callable. Failing this assertion means somebody re-introduced
+    // JSON deep-clone in setupStoreReset and wiped the actions.
+    const { setLocale, toggleLocale } = useLocaleStore.getState()
+    expect(typeof setLocale).toBe("function")
+    expect(typeof toggleLocale).toBe("function")
+    // Round-trip: call the action, observe state mutation.
+    setLocale("fr")
+    expect(useLocaleStore.getState().locale).toBe("fr")
+  })
 })

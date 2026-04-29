@@ -26,10 +26,26 @@
  *
  *   setupStoreReset(useEditorStore, useDatasetStore, useProjectStore)
  *
- * The helper takes a snapshot of `getState()` at first call and uses
- * `setState(snapshot, true)` (replace = true) to restore in `afterEach`.
- * The snapshot is captured once per test module, before the first test
- * runs — assuming the store hasn't been mutated at module-load time.
+ * Snapshot strategy
+ * -----------------
+ * The helper captures `getState()` once before the first test (in
+ * `beforeAll`) and restores it via `setState(snapshot, true)` in
+ * `afterEach`. **No deep-clone** — the snapshot keeps function
+ * references intact so action methods (e.g. `setLocale`,
+ * `setNodeExecState`, `fetchRules`) survive the restore.
+ *
+ * This codebase declares store actions on the state object via the
+ * canonical `create((set, get) => ({ field, action: () => ... }))`
+ * pattern, so the actions LIVE on the state. A JSON deep-clone reset
+ * would drop those functions and the next test that triggers a
+ * handler calling them crashes with `TypeError: x is not a function`.
+ *
+ * Tradeoff: if a test mutates a nested object in place
+ * (`state.items.push(...)`), the mutation leaks into the snapshot's
+ * nested reference. Idiomatic zustand actions create new objects
+ * (immutable updates), so this is rarely a problem. If you hit it,
+ * do `useStore.setState({ items: [...newItems] })` instead of mutating
+ * an array in place.
  */
 
 import { afterEach, beforeAll } from "vitest"
@@ -49,13 +65,10 @@ export function setupStoreReset<TStores extends ZustandStore<unknown>[]>(
 
   beforeAll(() => {
     for (const store of stores) {
-      // Deep-clone via JSON to avoid sharing nested arrays/objects with
-      // the running state (a `setState({ items: [...] })` would mutate
-      // the snapshot otherwise). Functions are dropped — zustand actions
-      // live on the store closure, not on the state object, so this is
-      // safe for the default store shape. If a store puts callbacks in
-      // state (rare), use the store's own `_reset()` helper instead.
-      snapshots.set(store, JSON.parse(JSON.stringify(store.getState())))
+      // Capture the state object reference directly. JSON deep-clone
+      // would drop the action functions (this codebase keeps actions
+      // on the state object) — see the doc comment at the top.
+      snapshots.set(store, store.getState())
     }
   })
 
@@ -65,9 +78,13 @@ export function setupStoreReset<TStores extends ZustandStore<unknown>[]>(
       if (snapshot !== undefined) {
         // Replace mode (second arg `true`) wipes any keys added during
         // the test — without it, an extra key set via setState would
-        // survive the restore. We re-clone so subsequent tests can't
-        // mutate the snapshot.
-        store.setState(JSON.parse(JSON.stringify(snapshot)) as never, true)
+        // survive the restore. We rebuild a fresh top-level object so
+        // a test that does `state.foo = ...` (rare) doesn't tamper
+        // with our cached snapshot's identity.
+        store.setState(
+          { ...(snapshot as Record<string, unknown>) } as never,
+          true,
+        )
       }
     }
   })
