@@ -1,0 +1,56 @@
+version: 2
+
+updates:
+  # npm packages — pnpm-managed, weekly bump on Mondays
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Paris
+    open-pull-requests-limit: 5
+    versioning-strategy: increase-if-necessary
+    labels:
+      - dependencies
+      - npm
+    groups:
+      # Group all minor/patch bumps to keep PR noise down
+      minor-and-patch:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+      # Major bumps stay individual so they get reviewed properly
+      react-ecosystem:
+        applies-to: version-updates
+        patterns:
+          - react
+          - react-dom
+          - "@types/react*"
+          - react-router*
+        update-types:
+          - major
+      build-tooling:
+        applies-to: version-updates
+        patterns:
+          - vite*
+          - "@vitejs/*"
+          - typescript
+          - eslint*
+          - "@typescript-eslint/*"
+        update-types:
+          - major
+
+  # GitHub Actions — keep workflow versions current
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Paris
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - github-actions

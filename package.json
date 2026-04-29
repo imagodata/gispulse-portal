@@ -4,6 +4,9 @@
   "description": "GISPulse Portal — open-source web UI (AGPL-3.0). The Pro pages (admin, billing, SSO callback) live in the private @gispulse/portal-pro package.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
