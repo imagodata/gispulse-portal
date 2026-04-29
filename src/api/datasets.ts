@@ -84,8 +84,7 @@ export async function uploadDataset(file: File, force = false): Promise<DatasetM
 
 /** List all loaded datasets (with full layer metadata). */
 export async function listDatasets(): Promise<DatasetMeta[]> {
-  const res = await request<{ items: DatasetMeta[] }>("/datasets")
-  return res.items
+  return request<DatasetMeta[]>("/datasets")
 }
 
 /** Delete a dataset and its files. */
