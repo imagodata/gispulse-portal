@@ -24,6 +24,7 @@ import { SchemaForm } from "./SchemaForm"
 import { isRenderableSchema, validateAgainstSchema, type JSONSchema } from "./schemaFormUtils"
 import { useCapabilities } from "@/hooks/useCapabilities"
 import { useLocaleStore } from "@/stores/localeStore"
+import { useT } from "@/i18n/useT"
 import { makeCapabilityTranslator } from "@/i18n/capabilityLabels"
 
 // ---------------------------------------------------------------------------
@@ -124,6 +125,7 @@ export function NodePropertyPanel({ nodeId, nodeType, nodeData }: NodePropertyPa
   const { caps, byName, loading: capsLoading } = useCapabilities()
   const locale = useLocaleStore((s) => s.locale)
   const toggleLocale = useLocaleStore((s) => s.toggleLocale)
+  const t = useT()
 
   const data = nodeData ?? {}
   const label = (data.label as string) ?? "Node"
@@ -418,13 +420,13 @@ export function NodePropertyPanel({ nodeId, nodeType, nodeData }: NodePropertyPa
                 <>
                   <div className="flex items-center justify-between mt-3 mb-1.5">
                     <h4 className="text-label font-semibold uppercase tracking-wider text-muted-foreground">
-                      {locale === "fr" ? "Paramètres" : "Parameters"}
+                      {t("node.properties.parameters_heading")}
                     </h4>
                     <button
                       type="button"
                       onClick={toggleLocale}
                       className="text-label-sm text-muted-foreground hover:text-foreground hover:underline"
-                      aria-label={locale === "fr" ? "Switch to English labels" : "Passer en français"}
+                      aria-label={t("locale.toggle.tooltip")}
                       title={locale === "fr" ? "EN" : "FR"}
                     >
                       {locale === "fr" ? "EN" : "FR"}
