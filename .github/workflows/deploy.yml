@@ -17,12 +17,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout portal
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: portal
 
       - name: Checkout engine (for design-system tokens)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: imagodata/gispulse
           path: engine
@@ -30,14 +30,14 @@ jobs:
       - name: Symlink design-system as sibling of portal
         run: ln -sfn engine/design-system design-system
 
-      - name: Setup Node 20
-        uses: actions/setup-node@v4
+      - name: Setup Node 22
+        uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install dependencies
         working-directory: portal
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Build
         working-directory: portal

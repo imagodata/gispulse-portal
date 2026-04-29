@@ -7,39 +7,46 @@ on:
     branches: [main]
 
 jobs:
-  backend:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-
-      - name: Install dependencies
-        run: pip install -e ".[dev]"
-
-      - name: Lint
-        run: ruff check .
-
-      - name: Run tests
-        run: pytest tests/ -x -q
-
   frontend:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout portal
+        uses: actions/checkout@v5
         with:
-          node-version: 20
+          path: portal
+
+      - name: Checkout engine (for design-system sibling)
+        uses: actions/checkout@v5
+        with:
+          repository: imagodata/gispulse
+          path: engine
+
+      - name: Symlink design-system as sibling of portal
+        run: ln -sfn engine/design-system design-system
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
           cache: npm
           cache-dependency-path: portal/package-lock.json
 
       - name: Install dependencies
-        run: cd portal && npm ci
+        working-directory: portal
+        run: npm ci --no-audit --no-fund
 
       - name: TypeScript check
-        run: cd portal && npx tsc --noEmit
+        working-directory: portal
+        run: npx tsc --noEmit
+
+      - name: Lint
+        working-directory: portal
+        run: npm run lint
+
+      - name: Test
+        working-directory: portal
+        run: npm test
 
       - name: Build
-        run: cd portal && npm run build
+        working-directory: portal
+        run: npm run build
