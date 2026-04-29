@@ -16,35 +16,25 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout portal
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
         with:
-          path: portal
+          version: 10
 
-      - name: Checkout engine (for design-system tokens)
-        uses: actions/checkout@v5
-        with:
-          repository: imagodata/gispulse
-          path: engine
-
-      - name: Symlink design-system as sibling of portal
-        run: ln -sfn engine/design-system design-system
-
-      - name: Setup Node 22
-        uses: actions/setup-node@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
+          cache: pnpm
 
       - name: Install dependencies
-        working-directory: portal
-        run: npm ci --no-audit --no-fund
+        run: pnpm install --frozen-lockfile
 
       - name: Build
-        working-directory: portal
-        run: npm run build
+        run: pnpm build
 
       - name: Publish dist to 'deploy' branch
-        working-directory: portal/dist
+        working-directory: dist
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
