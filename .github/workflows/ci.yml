@@ -7,39 +7,32 @@ on:
     branches: [main]
 
 jobs:
-  backend:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-
-      - name: Install dependencies
-        run: pip install -e ".[dev]"
-
-      - name: Lint
-        run: ruff check .
-
-      - name: Run tests
-        run: pytest tests/ -x -q
-
   frontend:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-          cache-dependency-path: portal/package-lock.json
+          cache: pnpm
 
       - name: Install dependencies
-        run: cd portal && npm ci
+        run: pnpm install --frozen-lockfile
+
+      # TODO: re-enable `pnpm lint` once the 174 pre-existing eslint errors
+      # are cleared (P2 in audit_deep_portails_2026_04_29). Skipping for now
+      # to keep the build/tests gate honest after the Rename & Reseed split.
 
       - name: TypeScript check
-        run: cd portal && npx tsc --noEmit
+        run: pnpm exec tsc --noEmit
+
+      - name: Run tests
+        run: pnpm test
 
       - name: Build
-        run: cd portal && npm run build
+        run: pnpm build

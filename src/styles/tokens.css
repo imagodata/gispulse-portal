@@ -1,14 +1,13 @@
 /* GISPulse portal tokens.
  *
- * Imports the shared design-system tokens (typography, spacing, radius,
- * shadow scales) so portal/src/index.css references like
- * `var(--gp-text-label-xs)` actually resolve. Portal-specific overrides
- * for brand/node/geom/status/surface follow below and intentionally
- * shadow the design-system defaults — the portal vocabulary
- * (--gp-node-source/transform/output/trigger/control/code) is finer
- * grained than the design-system one (--gp-node-dataset/capability).
+ * Portal-specific brand/node/geom/status/surface tokens. Typography,
+ * spacing, radius, sizing tokens (`--gp-text-label-*`, `--gp-spacing-*`,
+ * `--gp-width-*`) are defined in `src/index.css` since the
+ * Rename & Reseed split (2026-04-25); the previous shared
+ * `design-system/tokens.css` lived in the pre-split mono-repo and is
+ * gone. This file overrides nothing from index.css — it only adds
+ * portal-specific node/geom/status/surface vocabulary.
  */
-@import "../../../design-system/tokens.css";
 
 :root {
   /* Brand */
