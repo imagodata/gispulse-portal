@@ -12,6 +12,16 @@ dist
 dist-ssr
 *.local
 
+# Python packaging artifacts
+gispulse_portal/dist/
+python-dist/
+build/
+*.egg-info/
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

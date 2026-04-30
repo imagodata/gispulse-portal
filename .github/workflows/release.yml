@@ -1,0 +1,173 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build + smoke-test only; skip PyPI publish and GH Release."
+        type: boolean
+        default: true
+      version:
+        description: "Version to dry-run against (defaults to pyproject.toml)."
+        type: string
+        default: ""
+
+permissions:
+  contents: write
+  id-token: write
+
+env:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "22"
+  PNPM_VERSION: "10"
+  # ``python -m build`` uses an outdir distinct from ``./dist`` because
+  # ``./dist`` is owned by Vite (SPA build output) and feeding it back
+  # to setuptools would mix the wheel with the static assets.
+  PY_DIST_DIR: "python-dist"
+
+jobs:
+  # ── 1. Build SPA + Python wheel/sdist, publish to PyPI ──────────────
+  publish-pypi:
+    name: Publish gispulse-portal to PyPI
+    runs-on: ubuntu-latest
+    environment: pypi
+
+    steps:
+      - uses: actions/checkout@v6
+
+      # ── Frontend build (SPA) ────────────────────────────────────
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install JS dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build SPA (pnpm build → ./dist)
+        run: pnpm build
+
+      - name: Embed SPA build into Python package
+        # The wheel ships the SPA via [tool.setuptools.package-data].
+        # This step is the bridge between the JS toolchain output
+        # (./dist) and the Python module location (gispulse_portal/dist).
+        run: |
+          rm -rf gispulse_portal/dist
+          cp -r dist gispulse_portal/dist
+          echo "Bundled SPA size:"
+          du -sh gispulse_portal/dist
+          echo "Top-level entries:"
+          ls -la gispulse_portal/dist | head -20
+
+      # ── Python build ────────────────────────────────────────────
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Python build tooling
+        run: pip install build twine
+
+      - name: Verify version matches tag
+        if: github.event_name == 'push'
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PYPROJECT_VERSION=$(grep -E '^version = ' pyproject.toml | head -1 | sed -E 's/version = "(.*)"/\1/')
+          INIT_VERSION=$(grep -E '^__version__ = ' gispulse_portal/__init__.py | head -1 | sed -E 's/__version__ = "(.*)"/\1/')
+          echo "Tag: $TAG_VERSION"
+          echo "pyproject.toml: $PYPROJECT_VERSION"
+          echo "gispulse_portal/__init__.py: $INIT_VERSION"
+          if [ "$TAG_VERSION" != "$PYPROJECT_VERSION" ]; then
+            echo "ERROR: tag and pyproject.toml versions differ"
+            exit 1
+          fi
+          if [ "$TAG_VERSION" != "$INIT_VERSION" ]; then
+            echo "ERROR: tag and __init__.py __version__ differ"
+            exit 1
+          fi
+
+      - name: Build sdist + wheel
+        run: python -m build --outdir "${PY_DIST_DIR}"
+
+      - name: Verify package metadata
+        run: twine check "${PY_DIST_DIR}"/*
+
+      - name: List built artifacts
+        run: ls -la "${PY_DIST_DIR}/"
+
+      - name: Smoke-test wheel in clean venv
+        run: |
+          python -m venv /tmp/smoke
+          /tmp/smoke/bin/pip install --upgrade pip
+          /tmp/smoke/bin/pip install "${PY_DIST_DIR}"/gispulse_portal-*.whl
+          /tmp/smoke/bin/python -c "
+          from gispulse_portal import PORTAL_DIST_PATH, __version__
+          print(f'gispulse_portal {__version__} -> {PORTAL_DIST_PATH}')
+          assert PORTAL_DIST_PATH.is_dir(), f'dist missing at {PORTAL_DIST_PATH}'
+          assert (PORTAL_DIST_PATH / 'index.html').is_file(), 'index.html missing'
+          print('smoke ok')
+          "
+          /tmp/smoke/bin/pip install pytest
+          /tmp/smoke/bin/pytest tests/ -v
+
+      - name: Publish to PyPI (trusted publisher OIDC)
+        if: github.event_name == 'push' || inputs.dry_run == false
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: ${{ env.PY_DIST_DIR }}
+
+  # ── 2. Create GitHub Release with sdist + wheel attached ────────────
+  github-release:
+    name: Create GitHub Release
+    needs: publish-pypi
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || inputs.dry_run == false
+
+    steps:
+      - uses: actions/checkout@v6
+
+      # Re-build artifacts here (needs same SPA bundling as publish-pypi).
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: |
+          rm -rf gispulse_portal/dist
+          cp -r dist gispulse_portal/dist
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Build artifacts
+        run: |
+          pip install build
+          python -m build --outdir "${PY_DIST_DIR}"
+
+      - name: Generate checksums
+        run: |
+          cd "${PY_DIST_DIR}"
+          sha256sum *.whl *.tar.gz > SHA256SUMS
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --title "GISPulse Portal ${{ github.ref_name }}" \
+            --generate-notes \
+            "${PY_DIST_DIR}"/*.whl "${PY_DIST_DIR}"/*.tar.gz "${PY_DIST_DIR}"/SHA256SUMS
