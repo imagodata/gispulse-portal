@@ -55,6 +55,20 @@ export const STRINGS = {
   "toast.saved": { en: "Saved", fr: "Enregistré" },
   "toast.copied_clipboard": { en: "Copied to clipboard", fr: "Copié dans le presse-papiers" },
   "toast.deleted": { en: "Deleted", fr: "Supprimé" },
+  "toast.qml_imported": { en: "QML style applied", fr: "Style QML appliqué" },
+  "toast.qml_exported": { en: "QML style downloaded", fr: "Style QML téléchargé" },
+  "toast.qml_import_failed": { en: "QML import failed", fr: "Échec de l'import QML" },
+  "toast.qml_export_failed": { en: "QML export failed", fr: "Échec de l'export QML" },
+
+  // ─── Style editor (QML import/export) ─────────────────────────────────────
+  "style.import_qml": { en: "Import .qml", fr: "Importer .qml" },
+  "style.export_qml": { en: "Export .qml", fr: "Exporter .qml" },
+  "dialog.import_qml.title": { en: "Replace current style?", fr: "Remplacer le style actuel ?" },
+  "dialog.import_qml.body": {
+    en: "Importing this QML file will overwrite the current layer style. Continue?",
+    fr: "Importer ce fichier QML écrasera le style actuel du layer. Continuer ?",
+  },
+  "dialog.import_qml.confirm": { en: "Replace", fr: "Remplacer" },
 
   // ─── Node property panel ──────────────────────────────────────────────────
   "node.properties.parameters_heading": { en: "Parameters", fr: "Paramètres" },

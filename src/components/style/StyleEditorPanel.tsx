@@ -6,11 +6,15 @@
  * Changes apply in real-time to the map via the mapViewStore.
  */
 
-import { useCallback, useMemo } from "react"
-import { X, Circle, Minus, Square, Layers, BookOpen, RotateCcw } from "lucide-react"
+import { useCallback, useMemo, useRef, useState } from "react"
+import { toast } from "sonner"
+import { X, Circle, Minus, Square, Layers, BookOpen, RotateCcw, Upload, Download } from "lucide-react"
 import { IconButton } from "@/components/ui/icon-button"
+import { ConfirmDialog } from "@/components/ConfirmDialog"
+import { useT } from "@/i18n/useT"
 import { useMapViewStore, parseLayerKey } from "@/stores/mapViewStore"
 import { useDatasetStore } from "@/stores/datasetStore"
+import { importQml, exportQml } from "@/api/styles"
 import type {
   LayerStyleDef,
   RendererType,
@@ -69,6 +73,11 @@ export function StyleEditorPanel({ layerKey, onClose }: StyleEditorPanelProps) {
     const view = s.views.find((v) => v.id === s.activeViewId) ?? s.views[0]
     return view?.state.layerStack ?? []
   })
+  const t = useT()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [pendingImport, setPendingImport] = useState<File | null>(null)
+  const [importing, setImporting] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   // Find layer metadata and current style
   const ds = datasets.find((d) => d.id === datasetId)
@@ -136,6 +145,55 @@ export function StyleEditorPanel({ layerKey, onClose }: StyleEditorPanelProps) {
     [commit],
   )
 
+  // ── QML import/export ─────────────────────────────────────────────
+
+  const runImport = useCallback(
+    async (file: File) => {
+      setImporting(true)
+      try {
+        const result = await importQml(datasetId, layerName, file, geom)
+        setLayerStyleDef(layerKey, result.style_def)
+        toast.success(t("toast.qml_imported"), { description: file.name })
+      } catch (err) {
+        const detail = err instanceof Error ? err.message : String(err)
+        toast.error(t("toast.qml_import_failed"), { description: detail })
+      } finally {
+        setImporting(false)
+      }
+    },
+    [datasetId, layerName, geom, layerKey, setLayerStyleDef, t],
+  )
+
+  const handleFilePicked = useCallback(
+    (file: File | null) => {
+      if (!file) return
+      // Only show overwrite confirmation when the user already has a custom
+      // style applied. fromLegacyStyle output is just default colour values,
+      // not a deliberate styling choice — overwriting that is harmless.
+      if (mapLayer?.styleDef) {
+        setPendingImport(file)
+      } else {
+        void runImport(file)
+      }
+    },
+    [mapLayer?.styleDef, runImport],
+  )
+
+  const handleExport = useCallback(async () => {
+    setExporting(true)
+    try {
+      const safeDataset = (ds?.name ?? datasetId).replace(/[^a-z0-9_-]+/gi, "_")
+      const safeLayer = layerName.replace(/[^a-z0-9_-]+/gi, "_")
+      await exportQml(datasetId, layerName, `${safeDataset}-${safeLayer}.qml`)
+      toast.success(t("toast.qml_exported"))
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err)
+      toast.error(t("toast.qml_export_failed"), { description: detail })
+    } finally {
+      setExporting(false)
+    }
+  }, [ds, datasetId, layerName, t])
+
   if (!ds || !layerMeta || !mapLayer) return null
 
   const displayName = mapLayer.displayName || layerName
@@ -149,6 +207,32 @@ export function StyleEditorPanel({ layerKey, onClose }: StyleEditorPanelProps) {
           {displayName}
         </span>
         <span className="text-label-sm text-muted-foreground capitalize">{geom}</span>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".qml,application/xml,text/xml"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0] ?? null
+            handleFilePicked(file)
+            // reset so re-selecting the same file still triggers onChange
+            e.target.value = ""
+          }}
+        />
+        <IconButton
+          label={t("style.import_qml")}
+          disabled={importing}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <Upload size={12} />
+        </IconButton>
+        <IconButton
+          label={t("style.export_qml")}
+          disabled={exporting}
+          onClick={handleExport}
+        >
+          <Download size={12} />
+        </IconButton>
         <IconButton
           label="Reset to default style"
           onClick={() => { clearLayerStyleDef(layerKey); onClose() }}
@@ -159,6 +243,21 @@ export function StyleEditorPanel({ layerKey, onClose }: StyleEditorPanelProps) {
           <X size={14} />
         </IconButton>
       </div>
+
+      <ConfirmDialog
+        open={pendingImport !== null}
+        title={t("dialog.import_qml.title")}
+        description={t("dialog.import_qml.body")}
+        confirmLabel={t("dialog.import_qml.confirm")}
+        cancelLabel={t("common.cancel")}
+        variant="destructive"
+        onConfirm={() => {
+          const file = pendingImport
+          setPendingImport(null)
+          if (file) void runImport(file)
+        }}
+        onCancel={() => setPendingImport(null)}
+      />
 
       {/* Renderer selector */}
       <div className="flex gap-0.5 px-3 py-1.5 border-b">
