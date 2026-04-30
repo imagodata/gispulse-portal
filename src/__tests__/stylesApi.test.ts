@@ -156,4 +156,7 @@ describe("classifyMethodToBreaksMethod", () => {
     expect(classifyMethodToBreaksMethod("equal_interval")).toBe("equal_interval")
     expect(classifyMethodToBreaksMethod("std_dev")).toBe("std_dev")
   })
+  it("returns null for 'manual' so callers skip the /breaks request", () => {
+    expect(classifyMethodToBreaksMethod("manual")).toBeNull()
+  })
 })
