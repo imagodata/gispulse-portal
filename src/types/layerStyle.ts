@@ -84,6 +84,34 @@ export interface ColorRampDef {
   colors: string[]  // ordered hex stops
 }
 
+// ── Blend modes ───────────────────────────────────────────────────────
+
+/**
+ * Composite operation applied when the layer is rendered on top of the
+ * stack. Values mirror the CSS `mix-blend-mode` keywords MapLibre supports
+ * via the canvas DOM element. The same set roundtrips through QGIS QML
+ * (`<blendMode>` element) so server-persisted styles match QGIS behaviour.
+ */
+export type BlendMode =
+  | "normal"
+  | "multiply"
+  | "screen"
+  | "overlay"
+  | "darken"
+  | "lighten"
+  | "color-dodge"
+  | "color-burn"
+  | "hard-light"
+  | "soft-light"
+  | "difference"
+  | "exclusion"
+
+export const BLEND_MODES: ReadonlyArray<BlendMode> = [
+  "normal", "multiply", "screen", "overlay",
+  "darken", "lighten", "color-dodge", "color-burn",
+  "hard-light", "soft-light", "difference", "exclusion",
+] as const
+
 // ── Renderer types ────────────────────────────────────────────────────
 
 export type RendererType = "single" | "categorized" | "graduated" | "rule-based"
@@ -156,6 +184,12 @@ export interface LayerStyleDef {
   // Scale visibility
   minZoom?: number
   maxZoom?: number
+
+  /**
+   * Composite operation applied to the rendered layer.
+   * Defaults to "normal" when unset. Persists through QML for QGIS roundtrip.
+   */
+  blendMode?: BlendMode
 }
 
 // ── Migration helper: legacy flat style → LayerStyleDef ───────────────
