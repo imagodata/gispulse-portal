@@ -70,6 +70,71 @@ export const STRINGS = {
   },
   "dialog.import_qml.confirm": { en: "Replace", fr: "Remplacer" },
 
+  // ─── Style editor (graduated / categorized / blend / scale) ──────────────
+  "style.section.graduated": { en: "Graduated", fr: "Gradué" },
+  "style.section.categorized": { en: "Categorized", fr: "Catégorisé" },
+  "style.section.blend_mode": { en: "Blend Mode", fr: "Mode de fusion" },
+  "style.section.scale_visibility": { en: "Scale Visibility", fr: "Visibilité par échelle" },
+
+  "style.field": { en: "Field", fr: "Champ" },
+  "style.field.placeholder_numeric": { en: "Select numeric field…", fr: "Sélectionner un champ numérique…" },
+  "style.field.placeholder_any": { en: "Select field…", fr: "Sélectionner un champ…" },
+  "style.method": { en: "Method", fr: "Méthode" },
+  "style.method.equal_interval": { en: "Equal Interval", fr: "Intervalles égaux" },
+  "style.method.quantile": { en: "Quantile", fr: "Quantile" },
+  "style.method.natural_breaks": { en: "Natural Breaks", fr: "Seuils naturels" },
+  "style.method.std_dev": { en: "Std Deviation", fr: "Écart-type" },
+  "style.method.manual": { en: "Manual", fr: "Manuel" },
+
+  "style.classes": { en: "Classes", fr: "Classes" },
+  "style.classes_lc": { en: "classes", fr: "classes" },
+  "style.ramp": { en: "Ramp", fr: "Palette" },
+  "style.ramp.sequential": { en: "Sequential", fr: "Séquentiel" },
+  "style.ramp.diverging": { en: "Diverging", fr: "Divergent" },
+  "style.ramp.qualitative": { en: "Qualitative", fr: "Qualitative" },
+  "style.histogram": { en: "Distribution", fr: "Distribution" },
+  "style.classify": { en: "Classify", fr: "Classifier" },
+  "style.classifying": { en: "Classifying…", fr: "Classification…" },
+  "style.classify.manual_disabled": {
+    en: "Switch to a non-manual method to recompute breaks",
+    fr: "Choisissez une méthode non manuelle pour recalculer les seuils",
+  },
+  "style.error.not_enough_breaks": {
+    en: "Not enough distinct values to compute class breaks",
+    fr: "Pas assez de valeurs distinctes pour calculer les seuils",
+  },
+  "style.edit_break": { en: "Edit break", fr: "Modifier le seuil" },
+
+  "style.categorized.fetch_distinct": { en: "Fetch distinct values", fr: "Charger les valeurs distinctes" },
+  "style.categorized.cap_notice": {
+    en: "Showing top {n} values; remaining grouped under \"Other\"",
+    fr: "{n} premières valeurs ; les autres regroupées sous « Autre »",
+  },
+  "style.categorized.other": { en: "Other", fr: "Autre" },
+  "style.categorized.summary": {
+    en: "{n} categories ({k} values + fallback)",
+    fr: "{n} catégories ({k} valeurs + autres)",
+  },
+
+  "style.blend_mode.normal": { en: "Normal", fr: "Normal" },
+  "style.blend_mode.multiply": { en: "Multiply", fr: "Multiplier" },
+  "style.blend_mode.screen": { en: "Screen", fr: "Écran" },
+  "style.blend_mode.overlay": { en: "Overlay", fr: "Incrustation" },
+  "style.blend_mode.darken": { en: "Darken", fr: "Obscurcir" },
+  "style.blend_mode.lighten": { en: "Lighten", fr: "Éclaircir" },
+  "style.blend_mode.color_dodge": { en: "Color Dodge", fr: "Densité couleur −" },
+  "style.blend_mode.color_burn": { en: "Color Burn", fr: "Densité couleur +" },
+  "style.blend_mode.hard_light": { en: "Hard Light", fr: "Lumière crue" },
+  "style.blend_mode.soft_light": { en: "Soft Light", fr: "Lumière tamisée" },
+  "style.blend_mode.difference": { en: "Difference", fr: "Différence" },
+  "style.blend_mode.exclusion": { en: "Exclusion", fr: "Exclusion" },
+
+  "style.scale.min_zoom": { en: "Min Z", fr: "Z min" },
+  "style.scale.max_zoom": { en: "Max Z", fr: "Z max" },
+  "style.scale.always_visible": { en: "Visible at all zoom levels", fr: "Visible à toutes les échelles" },
+  "style.scale.range": { en: "Visible from zoom {min} to {max}", fr: "Visible de l'échelle {min} à {max}" },
+  "style.scale.zoom_to_layer": { en: "Zoom to layer extent", fr: "Zoomer sur l'étendue du layer" },
+
   // ─── Node property panel ──────────────────────────────────────────────────
   "node.properties.parameters_heading": { en: "Parameters", fr: "Paramètres" },
 

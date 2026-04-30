@@ -504,6 +504,28 @@ export function MapView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, datasets, selectedLayerName, layerStack, refreshCounter])
 
+  // Blend mode preview (issue #27) — applies the top-of-stack layer's
+  // blendMode to the MapLibre canvas via CSS `mix-blend-mode`. MapLibre
+  // does not expose a per-layer blend in the style spec, so this is a
+  // best-effort visual preview. The canonical persistence path is the
+  // LayerStyleDef itself (server-side `/styles` endpoints) and the QML
+  // roundtrip the backend handles.
+  useEffect(() => {
+    if (!ready || !mapRef.current) return
+    const canvas = mapRef.current.getCanvas()
+    // Find the top-most visible layer carrying a non-normal blendMode.
+    // layerStack is bottom-to-top, so iterate in reverse.
+    let mode = ""
+    for (let i = layerStack.length - 1; i >= 0; i--) {
+      const layer = layerStack[i]
+      if (!layer.visible) continue
+      const blend = layer.styleDef?.blendMode
+      if (blend && blend !== "normal") { mode = blend; break }
+    }
+    canvas.style.mixBlendMode = mode
+    return () => { canvas.style.mixBlendMode = "" }
+  }, [ready, layerStack])
+
   // Viewport-based reload for large layers — debounced on moveend
   useEffect(() => {
     if (!ready || !mapRef.current) return

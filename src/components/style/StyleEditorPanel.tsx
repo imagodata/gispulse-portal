@@ -23,10 +23,6 @@ import type {
   LineSymbol,
   FillSymbol,
   GeomFamily,
-  CategoryEntry,
-  GraduatedEntry,
-  ClassifyMethod,
-  ColorRampDef,
 } from "@/types/layerStyle"
 import { geomFamily, defaultSymbol, fromLegacyStyle } from "@/types/layerStyle"
 import type { LayerField } from "@/types/dataset"
@@ -38,6 +34,7 @@ import { GraduatedEditor } from "./GraduatedEditor"
 import { RuleBasedEditor } from "./RuleBasedEditor"
 import { LabelEditor } from "./LabelEditor"
 import { ScaleVisibility } from "./ScaleVisibility"
+import { BlendModeEditor } from "./BlendModeEditor"
 
 // ── Renderer type selector ────────────────────────────────────────────
 
@@ -129,10 +126,11 @@ export function StyleEditorPanel({ layerKey, onClose }: StyleEditorPanelProps) {
       } else if (renderer === "rule-based") {
         base.rules = styleDef.rules ?? []
       }
-      // Preserve labels and scale across renderer switches
+      // Preserve labels, scale, and blend mode across renderer switches
       if (styleDef.labeling) base.labeling = styleDef.labeling
       if (styleDef.minZoom != null) base.minZoom = styleDef.minZoom
       if (styleDef.maxZoom != null) base.maxZoom = styleDef.maxZoom
+      if (styleDef.blendMode) base.blendMode = styleDef.blendMode
       setLayerStyleDef(layerKey, base)
     },
     [styleDef, geom, layerKey, setLayerStyleDef],
@@ -363,10 +361,17 @@ export function StyleEditorPanel({ layerKey, onClose }: StyleEditorPanelProps) {
           onChange={(labeling) => commit({ labeling })}
         />
 
+        {/* Blend mode */}
+        <BlendModeEditor
+          blendMode={styleDef.blendMode}
+          onChange={(blendMode) => commit({ blendMode })}
+        />
+
         {/* Scale visibility */}
         <ScaleVisibility
           minZoom={styleDef.minZoom}
           maxZoom={styleDef.maxZoom}
+          bbox={layerMeta.bbox}
           onChange={(minZoom, maxZoom) => commit({ minZoom, maxZoom })}
         />
       </div>
