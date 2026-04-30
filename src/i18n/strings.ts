@@ -151,6 +151,79 @@ export const STRINGS = {
     en: "Something went wrong. Please retry.",
     fr: "Une erreur est survenue. Veuillez réessayer.",
   },
+
+  // ─── Settings panel (Mode 2 portal — issue #30) ──────────────────────────
+  "settings.title": { en: "Settings", fr: "Paramètres" },
+  "settings.open_label": { en: "Open settings", fr: "Ouvrir les paramètres" },
+  "settings.section.backend": { en: "Backend engine", fr: "Moteur backend" },
+  "settings.backend.description": {
+    en: "Connect the portal to your local gispulse engine, or stay on the public demo.",
+    fr: "Connectez le portail à votre moteur gispulse local, ou restez sur la démo publique.",
+  },
+  "settings.backend.url_label": { en: "Backend URL", fr: "URL du backend" },
+  "settings.backend.url_placeholder": {
+    en: "http://127.0.0.1:8001",
+    fr: "http://127.0.0.1:8001",
+  },
+  "settings.backend.url_hint": {
+    en: "Leave empty to use the public demo. Run `gispulse engine` to host one locally.",
+    fr: "Laissez vide pour utiliser la démo publique. Lancez `gispulse engine` pour en héberger un en local.",
+  },
+  "settings.backend.healthcheck": { en: "Test connection", fr: "Tester la connexion" },
+  "settings.backend.checking": { en: "Checking…", fr: "Vérification…" },
+  "settings.backend.health_ok": {
+    en: "Reachable ({ms} ms)",
+    fr: "Joignable ({ms} ms)",
+  },
+  "settings.backend.health_fail": { en: "Unreachable", fr: "Injoignable" },
+  "settings.backend.save": { en: "Save & connect", fr: "Enregistrer et connecter" },
+  "settings.backend.reset": { en: "Reset to demo", fr: "Réinitialiser à la démo" },
+
+  "error.backend_url.empty": {
+    en: "URL is required when leaving demo mode.",
+    fr: "Une URL est requise pour quitter la démo.",
+  },
+  "error.backend_url.scheme": {
+    en: "Only http:// and https:// URLs are supported.",
+    fr: "Seules les URL http:// et https:// sont acceptées.",
+  },
+  "error.backend_url.format": {
+    en: "Invalid URL format.",
+    fr: "Format d'URL invalide.",
+  },
+  "error.backend_url.trailing_path": {
+    en: "Drop the path — host only (e.g. https://api.example.com).",
+    fr: "Retirez le chemin — hôte seul (ex. https://api.example.com).",
+  },
+
+  // ─── Mode banner (Mode 2 portal — issue #31) ─────────────────────────────
+  "mode.banner.demo": { en: "Demo (read-only)", fr: "Démo (lecture seule)" },
+  "mode.banner.connected": {
+    en: "Connected to {host}",
+    fr: "Connecté à {host}",
+  },
+  "mode.banner.disconnected": {
+    en: "Engine unreachable — {host}",
+    fr: "Moteur injoignable — {host}",
+  },
+  "mode.banner.switch_to_engine": {
+    en: "Use my engine",
+    fr: "Utiliser mon moteur",
+  },
+  "mode.banner.switch_to_demo": {
+    en: "Back to demo",
+    fr: "Retour à la démo",
+  },
+  "mode.readonly.title": {
+    en: "Read-only demo",
+    fr: "Démo en lecture seule",
+  },
+  "mode.readonly.body": {
+    en: "Connect your own gispulse engine to save changes. The public demo can only be browsed.",
+    fr: "Connectez votre propre moteur gispulse pour enregistrer vos modifications. La démo publique est consultable uniquement.",
+  },
+  "mode.readonly.cta_docs": { en: "How to connect", fr: "Comment se connecter" },
+  "mode.readonly.cta_settings": { en: "Open settings", fr: "Ouvrir les paramètres" },
 } as const satisfies Record<string, Bilingual>
 
 export type StringKey = keyof typeof STRINGS

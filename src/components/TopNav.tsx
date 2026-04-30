@@ -13,6 +13,7 @@ import {
   Sun,
   Shield,
   Package,
+  Settings,
 } from "lucide-react"
 import { GISPulseLogo } from "@/components/GISPulseLogo"
 import { useUIStore } from "@/stores/uiStore"
@@ -20,7 +21,9 @@ import { useProjectStore } from "@/stores/projectStore"
 import { useLiveEventStore } from "@/hooks/useLiveEvents"
 import { useJobStore } from "@/stores/jobStore"
 import { useThemeStore } from "@/stores/themeStore"
+import { useSettingsStore } from "@/stores/settingsStore"
 import { UserMenu } from "@/components/UserMenu"
+import { useT } from "@/i18n/useT"
 // AdminGuard / isAdmin live in the private `gispulse-portal-pro` package.
 // In the libre app the admin button is never rendered.
 const isAdmin = () => false
@@ -42,6 +45,8 @@ export function TopNav() {
   const setActiveProject = useProjectStore((s) => s.setActiveProject)
   const runningJobs = useJobStore((s) => s.jobs.filter((j) => j.status === "running").length)
   const { resolvedTheme, toggleTheme } = useThemeStore()
+  const setSettingsOpen = useSettingsStore((s) => s.setPanelOpen)
+  const t = useT()
 
   const {
     leftPanelOpen, toggleLeftPanel,
@@ -112,6 +117,17 @@ export function TopNav() {
           aria-label={resolvedTheme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
         >
           {resolvedTheme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
+        </button>
+
+        {/* Settings — #30 (Mode 2 portal) */}
+        <button
+          onClick={() => setSettingsOpen(true)}
+          className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+          title={t("settings.open_label")}
+          aria-label={t("settings.open_label")}
+          data-testid="open-settings"
+        >
+          <Settings size={14} />
         </button>
 
         {/* Live indicator */}
