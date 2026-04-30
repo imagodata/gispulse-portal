@@ -7,17 +7,26 @@ import { RuleEditorModal } from "@/components/rules/RuleEditorModal"
 import { TriggerBuilderModal } from "@/components/triggers/TriggerBuilderModal"
 import { JobTrackerCorner } from "@/components/JobTrackerCorner"
 import { BackendStatusBanner } from "@/components/BackendStatusBanner"
+import { ModeBanner } from "@/components/ModeBanner"
+import { SettingsPanel } from "@/components/SettingsPanel"
+import { ReadOnlyDemoDialog } from "@/components/ReadOnlyDemoDialog"
 import { CommandPalette } from "@/components/CommandPalette"
 import { KeyboardShortcutsHelp } from "@/components/KeyboardShortcutsHelp"
 import { OnboardingFlow, isOnboardingDone } from "@/components/OnboardingFlow"
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts"
 import { useProjectStore } from "@/stores/projectStore"
 import { useAuthStore } from "@/stores/authStore"
+import { useSettingsStore } from "@/stores/settingsStore"
 
 export function RootLayout() {
   const activeProjectId = useProjectStore((s) => s.activeProjectId)
   const fetchProjects = useProjectStore((s) => s.fetchProjects)
   const checkAuth = useAuthStore((s) => s.checkAuth)
+
+  const settingsOpen = useSettingsStore((s) => s.panelOpen)
+  const setSettingsOpen = useSettingsStore((s) => s.setPanelOpen)
+  const readOnlyDialogOpen = useSettingsStore((s) => s.readOnlyDialogOpen)
+  const setReadOnlyDialogOpen = useSettingsStore((s) => s.setReadOnlyDialogOpen)
 
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
@@ -51,11 +60,29 @@ export function RootLayout() {
     fetchProjects().catch(() => {})
   }, [fetchProjects])
 
+  const handleOpenSettings = useCallback(() => setSettingsOpen(true), [setSettingsOpen])
+  const handleCloseSettings = useCallback(() => setSettingsOpen(false), [setSettingsOpen])
+  const handleCloseReadOnly = useCallback(
+    () => setReadOnlyDialogOpen(false),
+    [setReadOnlyDialogOpen],
+  )
+  const handleReadOnlyOpenSettings = useCallback(() => {
+    setReadOnlyDialogOpen(false)
+    setSettingsOpen(true)
+  }, [setReadOnlyDialogOpen, setSettingsOpen])
+
   if (!activeProjectId) {
     return (
       <TooltipProvider>
+        <ModeBanner onOpenSettings={handleOpenSettings} />
         <BackendStatusBanner />
         <ProjectsPage />
+        <SettingsPanel open={settingsOpen} onClose={handleCloseSettings} />
+        <ReadOnlyDemoDialog
+          open={readOnlyDialogOpen}
+          onClose={handleCloseReadOnly}
+          onOpenSettings={handleReadOnlyOpenSettings}
+        />
         <Toaster position="bottom-right" richColors />
       </TooltipProvider>
     )
@@ -63,6 +90,7 @@ export function RootLayout() {
 
   return (
     <TooltipProvider>
+      <ModeBanner onOpenSettings={handleOpenSettings} />
       <BackendStatusBanner />
       <Outlet />
       <RuleEditorModal />
@@ -70,6 +98,12 @@ export function RootLayout() {
       <JobTrackerCorner />
       <Toaster position="bottom-right" richColors />
       {/* Global overlays */}
+      <SettingsPanel open={settingsOpen} onClose={handleCloseSettings} />
+      <ReadOnlyDemoDialog
+        open={readOnlyDialogOpen}
+        onClose={handleCloseReadOnly}
+        onOpenSettings={handleReadOnlyOpenSettings}
+      />
       <CommandPalette open={paletteOpen} onClose={handleClosePalette} />
       <KeyboardShortcutsHelp open={shortcutsOpen} onClose={handleCloseShortcuts} />
       {onboardingOpen && <OnboardingFlow onDone={handleCloseOnboarding} />}
