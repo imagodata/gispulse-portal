@@ -103,7 +103,7 @@ export interface GraduatedEntry {
   symbol: SymbolDef
 }
 
-export type ClassifyMethod = "equal_interval" | "quantile" | "natural_breaks" | "std_dev"
+export type ClassifyMethod = "equal_interval" | "quantile" | "natural_breaks" | "std_dev" | "manual"
 
 /** One rule in a rule-based renderer */
 export interface RuleEntry {

@@ -113,15 +113,21 @@ export async function exportQml(
   return blob
 }
 
-const _CLASSIFY_TO_BREAKS: Record<ClassifyMethod, BreaksMethod> = {
+const _CLASSIFY_TO_BREAKS: Partial<Record<ClassifyMethod, BreaksMethod>> = {
   equal_interval: "equal_interval",
   quantile: "quantile",
   natural_breaks: "jenks",
   std_dev: "std_dev",
 }
 
-export function classifyMethodToBreaksMethod(m: ClassifyMethod): BreaksMethod {
-  return _CLASSIFY_TO_BREAKS[m]
+/**
+ * Map a UI ClassifyMethod to the backend `/breaks` endpoint method.
+ *
+ * Returns `null` for `"manual"`, which signals the caller that no server
+ * request should be issued — the breaks were edited by hand.
+ */
+export function classifyMethodToBreaksMethod(m: ClassifyMethod): BreaksMethod | null {
+  return _CLASSIFY_TO_BREAKS[m] ?? null
 }
 
 export { getDistinctValues, getFieldStats }
