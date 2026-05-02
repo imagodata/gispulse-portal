@@ -22,6 +22,7 @@ import { useLiveEventStore } from "@/hooks/useLiveEvents"
 import { useJobStore } from "@/stores/jobStore"
 import { useThemeStore } from "@/stores/themeStore"
 import { useSettingsStore } from "@/stores/settingsStore"
+import { ModeToggle } from "@/components/ModeToggle"
 import { UserMenu } from "@/components/UserMenu"
 import { useT } from "@/i18n/useT"
 // AdminGuard / isAdmin live in the private `gispulse-portal-pro` package.
@@ -108,6 +109,9 @@ export function TopNav() {
             {runningJobs} job{runningJobs > 1 ? "s" : ""}
           </div>
         )}
+
+        {/* Mode toggle — #31 (Mode 2 portal: Try it / My engine segmented) */}
+        <ModeToggle onOpenSettings={() => setSettingsOpen(true)} />
 
         {/* Theme toggle — #208 */}
         <button
