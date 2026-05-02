@@ -31,6 +31,8 @@ export const FORMAT_COLORS: Record<string, string> = {
   tiff: "bg-rose-500/15 text-rose-700 dark:text-rose-400",
 }
 
-export function formatBadgeClass(fmt: string): string {
-  return FORMAT_COLORS[fmt.toLowerCase()] ?? "bg-muted text-muted-foreground"
+export function formatBadgeClass(fmt: string | null | undefined): string {
+  const fallback = "bg-muted text-muted-foreground"
+  if (!fmt) return fallback
+  return FORMAT_COLORS[fmt.toLowerCase()] ?? fallback
 }
