@@ -224,6 +224,21 @@ export const STRINGS = {
   },
   "mode.readonly.cta_docs": { en: "How to connect", fr: "Comment se connecter" },
   "mode.readonly.cta_settings": { en: "Open settings", fr: "Ouvrir les paramètres" },
+
+  // ─── Mode toggle (header segmented control — issue #31) ───────────────────
+  "mode.toggle.try_it": { en: "Try it", fr: "Essayer" },
+  "mode.toggle.my_engine": { en: "My engine", fr: "Mon moteur" },
+  "mode.toggle.readonly_tooltip": {
+    en: "Read-only on demo — switch to My engine to run your own pipelines",
+    fr: "Lecture seule sur la démo — passez à Mon moteur pour exécuter vos pipelines",
+  },
+
+  // ─── Mixed-content warning banner (issue #42) ─────────────────────────────
+  "mixed_content.banner": {
+    en: "Mixed content: your browser will block requests from HTTPS to your local HTTP backend. Use `gispulse portal` to bind the SPA same-origin, or run portal over HTTPS.",
+    fr: "Contenu mixte : votre navigateur bloquera les requêtes HTTPS vers votre backend HTTP local. Utilisez `gispulse portal` pour un montage same-origin, ou accédez au portail via HTTPS.",
+  },
+  "mixed_content.learn_more": { en: "Learn more", fr: "En savoir plus" },
 } as const satisfies Record<string, Bilingual>
 
 export type StringKey = keyof typeof STRINGS

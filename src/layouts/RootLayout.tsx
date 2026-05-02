@@ -8,6 +8,7 @@ import { TriggerBuilderModal } from "@/components/triggers/TriggerBuilderModal"
 import { JobTrackerCorner } from "@/components/JobTrackerCorner"
 import { BackendStatusBanner } from "@/components/BackendStatusBanner"
 import { ModeBanner } from "@/components/ModeBanner"
+import { MixedContentBanner } from "@/components/MixedContentBanner"
 import { SettingsPanel } from "@/components/SettingsPanel"
 import { ReadOnlyDemoDialog } from "@/components/ReadOnlyDemoDialog"
 import { CommandPalette } from "@/components/CommandPalette"
@@ -74,6 +75,7 @@ export function RootLayout() {
   if (!activeProjectId) {
     return (
       <TooltipProvider>
+        <MixedContentBanner />
         <ModeBanner onOpenSettings={handleOpenSettings} />
         <BackendStatusBanner />
         <ProjectsPage />
