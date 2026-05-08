@@ -3,7 +3,7 @@
  * All nodes use this for consistent borders, backgrounds, and text colors.
  */
 
-export type NodeCategory = "source" | "transform" | "output" | "trigger" | "control" | "code" | "ops_table" | "ops_spatial" | "ops_aggregate" | "ops_validation" | "ops_custom"
+export type NodeCategory = "source" | "transform" | "output" | "trigger" | "control" | "code" | "ops_table" | "ops_spatial" | "ops_aggregate" | "ops_validation" | "ops_custom" | "pointcloud"
 
 interface NodeStyle {
   border: string
@@ -82,6 +82,15 @@ export const NODE_STYLES: Record<NodeCategory, NodeStyle> = {
     bg: "bg-slate-50 dark:bg-slate-900/50",
     text: "text-[var(--gp-node-code)]",
     label: "Custom",
+  },
+  // Reuses --gp-node-transform (blue) — pointcloud capabilities are spatial
+  // transforms semantically (LAZ in/out + scalar fields). Avoids a new
+  // CSS variable until a dedicated 3D theme is decided.
+  pointcloud: {
+    border: "border-[var(--gp-node-transform)]",
+    bg: "bg-blue-50 dark:bg-blue-950/50",
+    text: "text-[var(--gp-node-transform)]",
+    label: "Point Cloud",
   },
 }
 
