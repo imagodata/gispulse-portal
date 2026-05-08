@@ -61,6 +61,16 @@ const PALETTE_NODES: PaletteNode[] = [
   // Output
   { type: "output", label: "Output", description: "Export results", category: "output", icon: Download },
 
+  // Point clouds (4 OSS + 2 Pro). Pro entries carry `(Pro)` in description; the
+  // backend tier gate (persistence.tier.check_tier) raises TierError at runtime
+  // for Community licences — palette stays advertising the upgrade path.
+  { type: "capability", label: "Load LAS/LAZ", description: "Load LAS/LAZ as Point Z layer", category: "pointcloud", icon: Database, defaultData: { capability: "pointcloud_load_las", label: "Load LAS/LAZ" } },
+  { type: "capability", label: "Filter Classes", description: "Keep ASPRS class codes (e.g. 2, 6)", category: "pointcloud", icon: Cog, defaultData: { capability: "pointcloud_filter_classification", label: "Filter Classes" } },
+  { type: "capability", label: "Zonal Height", description: "Height stats per polygon zone", category: "pointcloud", icon: BarChart3, defaultData: { capability: "pointcloud_zonal_height", label: "Zonal Height" } },
+  { type: "capability", label: "Grid Summary", description: "Gridded point cloud summary", category: "pointcloud", icon: Calculator, defaultData: { capability: "pointcloud_grid_summary", label: "Grid Summary" } },
+  { type: "capability", label: "IGN Download", description: "(Pro) Download IGN LiDAR HD by bbox", category: "pointcloud", icon: Download, defaultData: { capability: "pointcloud_ign_download", label: "IGN Download" } },
+  { type: "capability", label: "Enrich", description: "(Pro) Add normals/curvature/density features", category: "pointcloud", icon: Sparkles, defaultData: { capability: "pointcloud_enrich", label: "Enrich" } },
+
   // ── Trigger Operations ──────────────────────────────────
   // Tables
   { type: "tableSource", label: "Table Source", description: "DML event source (INSERT/UPDATE/DELETE)", category: "ops_table", icon: Table2, defaultData: { nodeKind: "tableSource", label: "Table Source", schema: "", table: "", event: "INSERT" } },
@@ -110,6 +120,7 @@ const CATEGORIES: { id: NodeCategory; label: string; icon: React.ComponentType<{
   // Pipeline nodes
   { id: "source", label: "Sources", icon: Database, group: "Pipeline" },
   { id: "transform", label: "Processing", icon: Cog, group: "Pipeline" },
+  { id: "pointcloud", label: "Point Cloud", icon: Layers, group: "Pipeline" },
   { id: "control", label: "Logic", icon: GitBranch, group: "Pipeline" },
   { id: "trigger", label: "Triggers", icon: Zap, group: "Pipeline" },
   { id: "code", label: "Code", icon: Code, group: "Pipeline" },
@@ -128,6 +139,7 @@ const CAT_COLORS: Record<NodeCategory, string> = {
   ops_aggregate: "text-[var(--gp-node-output)]",
   ops_validation: "text-[var(--gp-node-control)]",
   ops_custom: "text-[var(--gp-node-code)]",
+  pointcloud: "text-[var(--gp-node-transform)]",
 }
 
 // ---------------------------------------------------------------------------
