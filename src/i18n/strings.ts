@@ -239,6 +239,65 @@ export const STRINGS = {
     fr: "Contenu mixte : votre navigateur bloquera les requêtes HTTPS vers votre backend HTTP local. Utilisez `gispulse portal` pour un montage same-origin, ou accédez au portail via HTTPS.",
   },
   "mixed_content.learn_more": { en: "Learn more", fr: "En savoir plus" },
+
+  // ─── Cocarte (v1.7 Publish — issue #56) ───────────────────────────────────
+  "cocarte.maps.title": { en: "My maps", fr: "Mes cartes" },
+  "cocarte.maps.empty": {
+    en: "No maps yet. Create one to start publishing.",
+    fr: "Aucune carte. Créez-en une pour commencer à publier.",
+  },
+  "cocarte.maps.create": { en: "New map", fr: "Nouvelle carte" },
+  "cocarte.maps.create.title_label": { en: "Map title", fr: "Titre de la carte" },
+  "cocarte.maps.create.title_placeholder": {
+    en: "e.g. Election results 2026",
+    fr: "ex. Résultats des élections 2026",
+  },
+  "cocarte.maps.delete.confirm": {
+    en: "Move this map to trash?",
+    fr: "Déplacer cette carte vers la corbeille ?",
+  },
+  "cocarte.maps.restore": { en: "Restore", fr: "Restaurer" },
+  "cocarte.maps.trash": { en: "Trash", fr: "Corbeille" },
+  "cocarte.maps.trash.empty": {
+    en: "Trash is empty.",
+    fr: "La corbeille est vide.",
+  },
+
+  // Visibility states
+  "cocarte.visibility.private": { en: "Private", fr: "Privée" },
+  "cocarte.visibility.unlisted": { en: "Unlisted", fr: "Non listée" },
+  "cocarte.visibility.public": { en: "Public", fr: "Publique" },
+  "cocarte.visibility.private.help": {
+    en: "Only you can see this map.",
+    fr: "Vous seul pouvez voir cette carte.",
+  },
+  "cocarte.visibility.unlisted.help": {
+    en: "Anyone with the share link can view this map.",
+    fr: "Toute personne disposant du lien peut voir cette carte.",
+  },
+  "cocarte.visibility.public.help": {
+    en: "This map appears in the public gallery.",
+    fr: "Cette carte apparaît dans la galerie publique.",
+  },
+
+  // Share token
+  "cocarte.share.copy_link": { en: "Copy share link", fr: "Copier le lien de partage" },
+  "cocarte.share.rotate": { en: "Rotate share link", fr: "Régénérer le lien" },
+  "cocarte.share.rotate.confirm": {
+    en: "Previously shared links will stop working. Continue?",
+    fr: "Les liens précédemment partagés cesseront de fonctionner. Continuer ?",
+  },
+  "cocarte.share.rotated": { en: "Share link rotated", fr: "Lien régénéré" },
+
+  // Tier gate
+  "cocarte.tier.limit_reached.title": {
+    en: "Map limit reached",
+    fr: "Limite de cartes atteinte",
+  },
+  "cocarte.tier.limit_reached.body": {
+    en: "Your tier allows {limit} maps. Upgrade to Pro for 100, or Team for unlimited.",
+    fr: "Votre offre autorise {limit} cartes. Passez à Pro pour 100 cartes, ou Équipe pour un nombre illimité.",
+  },
 } as const satisfies Record<string, Bilingual>
 
 export type StringKey = keyof typeof STRINGS
