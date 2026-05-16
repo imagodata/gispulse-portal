@@ -4,7 +4,7 @@ import maplibregl from "maplibre-gl"
 import "maplibre-gl/dist/maplibre-gl.css"
 import { useDatasetStore, useSelectedDataset } from "@/stores/datasetStore"
 import { useUIStore } from "@/stores/uiStore"
-import { useMapViewStore, useActiveView, useActiveBasemap, parseLayerKey, layerKey } from "@/stores/mapViewStore"
+import { useMapViewStore, useActiveView, useActiveBasemap, parseLayerKey } from "@/stores/mapViewStore"
 import { useMapStore } from "@/stores/mapStore"
 import { useProjectStore } from "@/stores/projectStore"
 import { useExternalLayersStore } from "@/stores/externalLayersStore"
@@ -92,7 +92,6 @@ export function MapView() {
   const activeView = useActiveView()
   const basemap = useActiveBasemap()
   const layerStack = activeView?.state.layerStack ?? []
-  const layerGroups = activeView?.state.layerGroups ?? {}
 
   const navigateView = useCallback((view: string) => {
     navigateToView(view)

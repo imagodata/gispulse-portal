@@ -5,7 +5,7 @@
  * optional triggers and auto-computation fields.
  */
 
-import { request } from "./request"
+import { getOriginBase, request } from "./request"
 
 // ---------------------------------------------------------------------------
 // Types
@@ -73,18 +73,18 @@ export async function listRelations(params?: {
   if (params?.has_trigger !== undefined) qs.set("has_trigger", String(params.has_trigger))
   if (params?.confirmed !== undefined) qs.set("confirmed", String(params.confirmed))
   const query = qs.toString()
-  return request<TableRelation[]>(`/relations${query ? `?${query}` : ""}`, undefined, "")
+  return request<TableRelation[]>(`/relations${query ? `?${query}` : ""}`, undefined, getOriginBase())
 }
 
 export async function getRelation(id: string): Promise<TableRelation> {
-  return request<TableRelation>(`/relations/${id}`, undefined, "")
+  return request<TableRelation>(`/relations/${id}`, undefined, getOriginBase())
 }
 
 export async function createRelation(data: RelationCreate): Promise<TableRelation> {
   return request<TableRelation>("/relations", {
     method: "POST",
     body: JSON.stringify(data),
-  }, "")
+  }, getOriginBase())
 }
 
 export async function updateRelation(
@@ -94,11 +94,11 @@ export async function updateRelation(
   return request<TableRelation>(`/relations/${id}`, {
     method: "PUT",
     body: JSON.stringify(data),
-  }, "")
+  }, getOriginBase())
 }
 
 export async function deleteRelation(id: string): Promise<void> {
-  return request(`/relations/${id}`, { method: "DELETE" }, "")
+  return request(`/relations/${id}`, { method: "DELETE" }, getOriginBase())
 }
 
 // ---------------------------------------------------------------------------
@@ -106,18 +106,18 @@ export async function deleteRelation(id: string): Promise<void> {
 // ---------------------------------------------------------------------------
 
 export async function confirmRelation(id: string): Promise<TableRelation> {
-  return request<TableRelation>(`/relations/${id}/confirm`, { method: "POST" }, "")
+  return request<TableRelation>(`/relations/${id}/confirm`, { method: "POST" }, getOriginBase())
 }
 
 export async function attachTrigger(id: string, triggerId: string): Promise<TableRelation> {
   return request<TableRelation>(`/relations/${id}/attach-trigger`, {
     method: "POST",
     body: JSON.stringify({ trigger_id: triggerId }),
-  }, "")
+  }, getOriginBase())
 }
 
 export async function detachTrigger(id: string): Promise<TableRelation> {
-  return request<TableRelation>(`/relations/${id}/detach-trigger`, { method: "POST" }, "")
+  return request<TableRelation>(`/relations/${id}/detach-trigger`, { method: "POST" }, getOriginBase())
 }
 
 export async function addComputation(
@@ -135,19 +135,19 @@ export async function addComputation(
   return request<TableRelation>(`/relations/${id}/add-computation`, {
     method: "POST",
     body: JSON.stringify(data),
-  }, "")
+  }, getOriginBase())
 }
 
 export async function removeComputation(id: string, fieldName: string): Promise<TableRelation> {
   return request<TableRelation>(`/relations/${id}/computed/${fieldName}`, {
     method: "DELETE",
-  }, "")
+  }, getOriginBase())
 }
 
 export async function previewSQL(id: string): Promise<{ relation_id: string; sql_statements: string[] }> {
-  return request(`/relations/${id}/preview-sql`, undefined, "")
+  return request(`/relations/${id}/preview-sql`, undefined, getOriginBase())
 }
 
 export async function detectRelationsApi(): Promise<TableRelation[]> {
-  return request<TableRelation[]>("/relations/detect", { method: "POST" }, "")
+  return request<TableRelation[]>("/relations/detect", { method: "POST" }, getOriginBase())
 }

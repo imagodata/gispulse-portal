@@ -119,7 +119,7 @@ function loadSnapshots(): MapViewSnapshot[] {
           state: { layerStack, basemap, layerGroups },
         }
       }
-      return s as MapViewSnapshot
+      return s as unknown as MapViewSnapshot
     })
   } catch {
     return []
@@ -268,7 +268,7 @@ interface MapViewStoreState {
   // Bulk operations
   addLayers: (keys: string[]) => void
   removeLayers: (keys: string[]) => void
-  applyImportedStyles: (datasetId: string, styles: { layer_name: string; color?: string; opacity?: number; stroke_color?: string; stroke_width?: number }[], styleDefs?: Record<string, LayerStyleDef>) => void
+  applyImportedStyles: (datasetId: string, styles: { layer_name: string; color?: string | null; opacity?: number | null; stroke_color?: string | null; stroke_width?: number | null }[], styleDefs?: Record<string, LayerStyleDef>) => void
 
   // Cleanup
   cleanupOrphanedLayers: (validKeys: Set<string>) => void

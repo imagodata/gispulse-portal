@@ -194,7 +194,7 @@ export function GraduatedEditor({
         const sym = { ...c.symbol } as Record<string, unknown>
         sym.color = colors[i]
         if (sym.kind === "fill") sym.strokeColor = colors[i]
-        return { ...c, symbol: sym as SymbolDef }
+        return { ...c, symbol: sym as unknown as SymbolDef }
       })
       onClassesChange(next)
     },
@@ -339,7 +339,7 @@ export function GraduatedEditor({
                   const sym = { ...next[i].symbol } as Record<string, unknown>
                   sym.color = color
                   if (sym.kind === "fill") sym.strokeColor = color
-                  next[i] = { ...next[i], symbol: sym as SymbolDef }
+                  next[i] = { ...next[i], symbol: sym as unknown as SymbolDef }
                   onClassesChange(next)
                 }}
               />

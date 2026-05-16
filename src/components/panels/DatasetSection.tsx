@@ -23,7 +23,7 @@ function formatBytes(bytes: number): string {
 
 export function DatasetsSection() {
   const { datasets, addDataset, removeDataset, renameDataset, setLoading } = useDatasetStore()
-  const { addLayer, addLayers, applyImportedStyles } = useMapViewStore()
+  const { addLayer, applyImportedStyles } = useMapViewStore()
   const activeLayerStack = useActiveLayerStack()
   const fileRef = useRef<HTMLInputElement>(null)
 

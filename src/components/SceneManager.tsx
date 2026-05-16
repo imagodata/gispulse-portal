@@ -19,7 +19,6 @@ function ViewRow({
   name,
   isActive,
   layerCount,
-  createdAt,
   onSwitch,
   onDelete,
   onRename,

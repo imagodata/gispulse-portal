@@ -1,5 +1,4 @@
 import { create } from "zustand"
-import type { BasemapId } from "@/types/project"
 import type { WorkspaceId } from "@/router"
 
 export type { WorkspaceId }

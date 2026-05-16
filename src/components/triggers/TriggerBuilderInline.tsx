@@ -104,24 +104,12 @@ export function TriggerBuilderInline({ triggerId }: TriggerBuilderInlineProps) {
     (trigger?.conditions?.threshold as string) ?? ""
   )
 
-  if (!trigger) {
-    return <p className="text-xs text-muted-foreground">Trigger not found</p>
-  }
-
-  const cond = trigger.conditions ?? {}
-  const operations = (cond.operations as unknown[]) ?? []
-  const predicates = (cond.predicates as { predicates?: unknown[] } | undefined)
-  const actions = (cond.actions as unknown[]) ?? []
-  const conditionCount = predicates?.predicates?.length ?? 0
-
-  const isDirty =
-    name !== trigger.name ||
-    triggerType !== trigger.trigger_type ||
-    event !== trigger.event ||
-    table !== (cond.table as string ?? "") ||
-    severity !== ((trigger as unknown as Record<string, unknown>).severity as string ?? "info")
-
+  // Hooks must run unconditionally — keep `useCallback` above the
+  // `!trigger` early return (react-hooks/rules-of-hooks). The callback
+  // re-checks `trigger` since it's only ever invoked from the rendered
+  // UI, which the early return below already gates.
   const handleSave = useCallback(async () => {
+    if (!trigger) return
     if (!name.trim()) {
       toast.error("Name is required.")
       return
@@ -147,6 +135,23 @@ export function TriggerBuilderInline({ triggerId }: TriggerBuilderInlineProps) {
       setSaving(false)
     }
   }, [name, triggerType, event, table, cron, threshold, trigger, triggerId, updateTrigger])
+
+  if (!trigger) {
+    return <p className="text-xs text-muted-foreground">Trigger not found</p>
+  }
+
+  const cond = trigger.conditions ?? {}
+  const operations = (cond.operations as unknown[]) ?? []
+  const predicates = (cond.predicates as { predicates?: unknown[] } | undefined)
+  const actions = (cond.actions as unknown[]) ?? []
+  const conditionCount = predicates?.predicates?.length ?? 0
+
+  const isDirty =
+    name !== trigger.name ||
+    triggerType !== trigger.trigger_type ||
+    event !== trigger.event ||
+    table !== (cond.table as string ?? "") ||
+    severity !== ((trigger as unknown as Record<string, unknown>).severity as string ?? "info")
 
   return (
     <div>

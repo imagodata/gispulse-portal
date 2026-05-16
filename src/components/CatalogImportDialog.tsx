@@ -287,8 +287,10 @@ export function CatalogImportDialog({
       }
       if (customName.trim()) params.name = customName.trim()
 
-      const result = await importFromCatalog(params as any)
-      onImported(result)
+      const result = await importFromCatalog(
+        params as unknown as Parameters<typeof importFromCatalog>[0],
+      )
+      onImported(result as ImportResult)
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {

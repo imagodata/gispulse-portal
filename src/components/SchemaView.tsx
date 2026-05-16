@@ -19,7 +19,7 @@ import { useRelationStore } from "@/stores/relationStore"
 import { useProjectStore } from "@/stores/projectStore"
 import type { DatasetMeta, LayerMeta } from "@/types/dataset"
 import { Badge } from "@/components/ui/badge"
-import { Activity, Zap, Plus, Link2, Eye, Trash2, Search } from "lucide-react"
+import { Activity, Zap, Link2, Eye, Trash2, Search } from "lucide-react"
 import { toast } from "sonner"
 import { ConfirmDialog } from "@/components/ConfirmDialog"
 import { SchemaLayerNode } from "@/components/nodes/SchemaLayerNode"
@@ -491,6 +491,7 @@ function FloatingTriggerPicker({
         trigger_type: "dml",
         category: "data",
         severity: "info",
+        rule_id: null,
         conditions: { table: sourceName, events: ["INSERT", "UPDATE", "DELETE"] },
         enabled: true,
       })
@@ -765,7 +766,7 @@ export function SchemaView() {
   const liveEvents = useLiveEventStore((s) => s.events)
   const lastTriggerFired = useMemo(() => {
     for (let i = liveEvents.length - 1; i >= 0; i--) {
-      if (liveEvents[i].type === "trigger_fired") return liveEvents[i].id
+      if (liveEvents[i].type === "trigger_fired") return liveEvents[i]._seq
     }
     return null
   }, [liveEvents])
@@ -875,12 +876,6 @@ export function SchemaView() {
     },
     [setContextSelection],
   )
-
-  // Resolve relation from edge
-  const resolveRelation = useCallback((edgeId: string): TableRelation | undefined => {
-    const relId = edgeId.startsWith("rel-") ? edgeId.slice(4) : undefined
-    return relId ? persistedRelations.find((r) => r.id === relId) : undefined
-  }, [persistedRelations])
 
   // Edge right-click handler
   const handleEdgeContextMenu = useCallback(
