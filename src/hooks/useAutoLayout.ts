@@ -33,7 +33,6 @@ export function useAutoLayout() {
 
       // Skip group nodes for layout (they are containers)
       const layoutNodes = nodes.filter((n) => n.type !== "group")
-      const groupNodes = nodes.filter((n) => n.type === "group")
 
       for (const node of layoutNodes) {
         const w = (node.measured?.width ?? node.width ?? DEFAULT_NODE_WIDTH) as number

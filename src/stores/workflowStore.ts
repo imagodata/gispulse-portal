@@ -11,9 +11,13 @@ import {
   listScenarios,
   deleteScenario as deleteScenarioApi,
   getScenario,
-  type ScenarioResponse,
 } from "@/api/scenarios"
-import { deserializeGraph, serializeGraph, type ScenarioGraph } from "@/lib/graphSerializer"
+import {
+  deserializeGraph,
+  pipelineSpecToGraph,
+  serializeGraph,
+  type ScenarioGraph,
+} from "@/lib/graphSerializer"
 import type { Node, Edge } from "@xyflow/react"
 
 // ---------------------------------------------------------------------------
@@ -78,7 +82,7 @@ interface WorkflowState {
   parseImport: (json: string) => { graph: ScenarioGraph; name: string } | null
 }
 
-export const useWorkflowStore = create<WorkflowState>((set, get) => ({
+export const useWorkflowStore = create<WorkflowState>((set) => ({
   // View mode
   view: "list",
   setView: (view) => set({ view }),
@@ -178,7 +182,6 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       }
       // PipelineSpec v2: convert steps to ScenarioGraph
       if (data.version === 2 && Array.isArray(data.steps)) {
-        const { pipelineSpecToGraph } = require("@/lib/graphSerializer")
         const { nodes, edges } = pipelineSpecToGraph(data)
         const graph: ScenarioGraph = {
           name: data.name || "Imported Pipeline",

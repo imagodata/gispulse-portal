@@ -24,8 +24,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # `tsc --noEmit` against the root tsconfig.json (files: [], references)
+      # type-checks nothing — it was a silent no-op. `tsc -b` builds the
+      # referenced projects (app + node) so the check actually gates.
       - name: TypeScript check
-        run: pnpm exec tsc --noEmit
+        run: pnpm exec tsc -b
 
       - name: Build
         run: pnpm build

@@ -1,6 +1,6 @@
 {
   "name": "@gispulse/portal-libre",
-  "version": "1.2.0",
+  "version": "1.5.2",
   "description": "GISPulse Portal — open-source web UI (AGPL-3.0). The Pro pages (admin, billing, SSO callback) live in the private @gispulse/portal-pro package.",
   "license": "AGPL-3.0-or-later",
   "type": "module",

@@ -101,7 +101,7 @@ export function CategorizedEditor({
     const sym = { ...next[idx].symbol } as Record<string, unknown>
     sym.color = color
     if (sym.kind === "fill") sym.strokeColor = color
-    next[idx] = { ...next[idx], symbol: sym as SymbolDef }
+    next[idx] = { ...next[idx], symbol: sym as unknown as SymbolDef }
     onCategoriesChange(next)
   }
 

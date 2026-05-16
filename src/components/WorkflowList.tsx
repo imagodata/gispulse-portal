@@ -329,7 +329,7 @@ export function WorkflowList() {
           toast.error("Invalid workflow file format")
           return
         }
-        const res = await createScenario(parsed.graph)
+        await createScenario(parsed.graph)
         toast.success(`Imported "${parsed.name}" as workflow`)
         fetchWorkflows()
       } catch (err) {

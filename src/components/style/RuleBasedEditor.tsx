@@ -6,7 +6,7 @@
  */
 
 import { useCallback } from "react"
-import { Plus, Trash2, Eye, EyeOff, X } from "lucide-react"
+import { Plus, Trash2, Eye, EyeOff } from "lucide-react"
 import type { RuleEntry, GeomFamily } from "@/types/layerStyle"
 import type { LayerField } from "@/types/dataset"
 import { defaultSymbol } from "@/types/layerStyle"

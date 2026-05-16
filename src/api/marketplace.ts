@@ -8,7 +8,7 @@
  *   DELETE /marketplace/plugins/:id/uninstall  — uninstall a plugin
  */
 
-import { request } from "./request"
+import { getOriginBase, request } from "./request"
 
 // ---------------------------------------------------------------------------
 // Types
@@ -50,10 +50,15 @@ interface PluginActionResponse {
 
 // ---------------------------------------------------------------------------
 // API functions
+//
+// `marketplace_router` is mounted at the application root with its own
+// `/marketplace` prefix — NOT under `/api/portal`. Every call passes
+// `getOriginBase()` to bypass the `/api/portal` suffix while still
+// honoring a Mode 2 custom backend URL.
 // ---------------------------------------------------------------------------
 
 export async function listInstalled(): Promise<InstalledPlugin[]> {
-  return request<InstalledPlugin[]>("/marketplace/plugins")
+  return request<InstalledPlugin[]>("/marketplace/plugins", undefined, getOriginBase())
 }
 
 export async function searchPlugins(query?: string, category?: PluginCategory): Promise<Plugin[]> {
@@ -61,17 +66,25 @@ export async function searchPlugins(query?: string, category?: PluginCategory): 
   if (query) params.set("q", query)
   if (category) params.set("category", category)
   const qs = params.toString()
-  return request<Plugin[]>(`/marketplace/catalog${qs ? `?${qs}` : ""}`)
+  return request<Plugin[]>(
+    `/marketplace/catalog${qs ? `?${qs}` : ""}`,
+    undefined,
+    getOriginBase(),
+  )
 }
 
 export async function installPlugin(id: string): Promise<PluginActionResponse> {
-  return request<PluginActionResponse>(`/marketplace/plugins/${encodeURIComponent(id)}/install`, {
-    method: "POST",
-  })
+  return request<PluginActionResponse>(
+    `/marketplace/plugins/${encodeURIComponent(id)}/install`,
+    { method: "POST" },
+    getOriginBase(),
+  )
 }
 
 export async function uninstallPlugin(id: string): Promise<PluginActionResponse> {
-  return request<PluginActionResponse>(`/marketplace/plugins/${encodeURIComponent(id)}/uninstall`, {
-    method: "DELETE",
-  })
+  return request<PluginActionResponse>(
+    `/marketplace/plugins/${encodeURIComponent(id)}/uninstall`,
+    { method: "DELETE" },
+    getOriginBase(),
+  )
 }

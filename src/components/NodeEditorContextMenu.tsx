@@ -5,11 +5,10 @@
  * (duplicate, delete, disconnect, run this node).
  */
 
-import { useEffect, useRef, useCallback } from "react"
+import { useEffect, useRef } from "react"
 import {
   Copy,
   Trash2,
-  Scissors,
   ZoomIn,
   ClipboardPaste,
   Play,
@@ -263,7 +262,6 @@ export function NodeContextMenu({
 
 export function EdgeContextMenu({
   position,
-  edgeId,
   onClose,
   onDelete,
 }: EdgeContextMenuProps) {

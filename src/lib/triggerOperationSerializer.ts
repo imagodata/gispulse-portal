@@ -252,11 +252,6 @@ function generateValidationSQL(
   }
 }
 
-function sqlQuote(val: string | undefined | null): string {
-  if (val == null || val === "") return "NULL"
-  return `'${val.replace(/'/g, "''")}'`
-}
-
 function generateSQLPreview(
   operations: TriggerOperation[],
   _compositeRules: SerializedTriggerOps["compositeRules"],
