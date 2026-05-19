@@ -239,6 +239,45 @@ export const STRINGS = {
     fr: "Contenu mixte : votre navigateur bloquera les requêtes HTTPS vers votre backend HTTP local. Utilisez `gispulse portal` pour un montage same-origin, ou accédez au portail via HTTPS.",
   },
   "mixed_content.learn_more": { en: "Learn more", fr: "En savoir plus" },
+
+  // ─── Worldwide aggregator tab (EPIC v1.9.0 #226 — issue #238 / A12) ───────
+  "worldwide.tab": { en: "Worldwide", fr: "Mondial" },
+  "worldwide.tab.description": {
+    en: "Global geo-data catalog",
+    fr: "Catalogue de données géo mondiales",
+  },
+  "worldwide.filter.jurisdiction": { en: "Jurisdiction", fr: "Juridiction" },
+  "worldwide.filter.domain": { en: "Domain", fr: "Domaine" },
+  "worldwide.filter.all": { en: "All", fr: "Toutes" },
+  "worldwide.badge.virtual": { en: "virtual", fr: "virtuel" },
+  "worldwide.badge.project": { en: "project", fr: "projet" },
+  "worldwide.action.create_virtual": {
+    en: "Add as virtual dataset",
+    fr: "Ajouter en jeu virtuel",
+  },
+  "worldwide.action.preview": { en: "Preview bbox", fr: "Prévisualiser la bbox" },
+  "worldwide.action.materialize": { en: "Materialize", fr: "Matérialiser" },
+  "worldwide.action.materializing": {
+    en: "Materializing…",
+    fr: "Matérialisation…",
+  },
+  "worldwide.hint.need_bbox": {
+    en: "Draw a bounding box to enable materialization",
+    fr: "Tracez une emprise pour activer la matérialisation",
+  },
+  "worldwide.empty": {
+    en: "No worldwide entries match your filters",
+    fr: "Aucune entrée mondiale ne correspond à vos filtres",
+  },
+  "worldwide.virtual.created": {
+    en: "Virtual dataset created",
+    fr: "Jeu virtuel créé",
+  },
+  "worldwide.virtual.materialized": {
+    en: "Dataset materialized",
+    fr: "Jeu de données matérialisé",
+  },
+  "worldwide.feature_count": { en: "features", fr: "entités" },
 } as const satisfies Record<string, Bilingual>
 
 export type StringKey = keyof typeof STRINGS

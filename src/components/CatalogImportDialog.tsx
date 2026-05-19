@@ -38,7 +38,9 @@ type BBox = [number, number, number, number] // [west, south, east, north]
 // BBox draw map
 // ---------------------------------------------------------------------------
 
-function BBoxDrawMap({
+export type CatalogBBox = BBox
+
+export function BBoxDrawMap({
   bbox,
   onBBoxChange,
   initialCenter,

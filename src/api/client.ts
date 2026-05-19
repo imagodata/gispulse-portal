@@ -101,6 +101,10 @@ export {
   searchOpenData,
   searchCatalog,
   getCatalogEntry,
+  searchWorldwide,
+  createVirtualDataset,
+  previewVirtualDataset,
+  materializeVirtualDataset,
 } from "./catalog"
 
 // Relations (Hybrid Schema)

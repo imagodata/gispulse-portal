@@ -14,7 +14,10 @@ import type {
   ProjectionEntry,
   FluxEntry,
   OpenDataEntry,
+  WorldwideEntry,
+  WorldwideFilters,
 } from "@/types/catalog"
+import type { DatasetMeta } from "@/types/dataset"
 
 const CATALOG = "/api/catalog"
 
@@ -151,6 +154,86 @@ export async function importFromCatalog(
   if (!res.ok) {
     const text = await res.text()
     throw new Error(`Catalog import failed (${res.status}): ${text}`)
+  }
+  return res.json() as Promise<CatalogImportResult>
+}
+
+// ---------------------------------------------------------------------------
+// Worldwide aggregator (EPIC v1.9.0 #226 — issue #238 / A12)
+//
+// Four endpoints under /api/catalog:
+//   GET  /worldwide                              — browse aggregated catalog
+//   POST /virtual                                — create a virtual dataset
+//   GET  /virtual/{id:path}/preview              — scan a bbox for stats
+//   POST /virtual/{id:path}/materialize          — download to a real dataset
+//
+// `virtual_id` contains `/` and `:` (e.g. "virtual:worldwide/<entry>"); the
+// backend declares the path param as `{virtual_id:path}` so we pass the id
+// verbatim (only encoding the bbox query string).
+// ---------------------------------------------------------------------------
+
+/** Browse the worldwide catalog with optional jurisdiction / domain filters. */
+export async function searchWorldwide(
+  filters?: WorldwideFilters,
+  signal?: AbortSignal,
+): Promise<WorldwideEntry[]> {
+  const params = new URLSearchParams()
+  if (filters?.search) params.set("search", filters.search)
+  if (filters?.domain) params.set("domain", filters.domain)
+  if (filters?.payload) params.set("payload", filters.payload)
+  if (filters?.jurisdiction) params.set("jurisdiction", filters.jurisdiction)
+  if (filters?.protocol) params.set("protocol", filters.protocol)
+  if (filters?.family) params.set("family", filters.family)
+  const qs = params.toString() ? `?${params}` : ""
+  return catalogRequest<WorldwideEntry[]>(`/worldwide${qs}`, [], signal)
+}
+
+/** Create a virtual (lazy) dataset from a worldwide catalog entry. */
+export async function createVirtualDataset(
+  entryId: string,
+  source = "worldwide",
+): Promise<DatasetMeta> {
+  const res = await fetch(`${CATALOG}/virtual`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ entry_id: entryId, source }),
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`Virtual dataset creation failed (${res.status}): ${text}`)
+  }
+  return res.json() as Promise<DatasetMeta>
+}
+
+/** Preview a virtual dataset — scans a bbox for feature_count / virtual_bbox. */
+export async function previewVirtualDataset(
+  virtualId: string,
+  bbox?: [number, number, number, number] | null,
+): Promise<DatasetMeta> {
+  const qs = bbox ? `?bbox=${encodeURIComponent(bbox.join(","))}` : ""
+  // virtualId is a `{id:path}` param — pass verbatim, do not encodeURIComponent.
+  const res = await fetch(`${CATALOG}/virtual/${virtualId}/preview${qs}`)
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`Virtual preview failed (${res.status}): ${text}`)
+  }
+  return res.json() as Promise<DatasetMeta>
+}
+
+/** Materialise a virtual dataset to a real on-disk dataset within a bbox. */
+export async function materializeVirtualDataset(
+  virtualId: string,
+  name: string,
+  bbox: [number, number, number, number],
+): Promise<CatalogImportResult> {
+  const res = await fetch(`${CATALOG}/virtual/${virtualId}/materialize`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, bbox }),
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`Materialization failed (${res.status}): ${text}`)
   }
   return res.json() as Promise<CatalogImportResult>
 }

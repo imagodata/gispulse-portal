@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react"
-import { Pencil, Download, Trash2, Database, FileType, Link, CheckCircle2, AlertCircle } from "lucide-react"
+import { Pencil, Download, Trash2, Database, FileType, Link, CheckCircle2, AlertCircle, Globe } from "lucide-react"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -161,12 +161,20 @@ export function DatasetsSection() {
   }, [])
 
   const sessionDatasets = useMemo(() => datasets.filter((ds) => ds.source_type === "session"), [datasets])
-  const projectDatasets = useMemo(() => datasets.filter((ds) => !ds.source_type || ds.source_type === "project"), [datasets])
+  // Project list also carries virtual datasets (#238 / A12) — they render
+  // with a distinct `virtual` badge until the user materializes them.
+  const projectDatasets = useMemo(
+    () => datasets.filter((ds) => !ds.source_type || ds.source_type === "project" || ds.source_type === "virtual"),
+    [datasets],
+  )
 
   const renderDataset = (ds: typeof datasets[0]) => {
     const totalFeatures = (ds.layers ?? []).reduce((a, l) => a + l.feature_count, 0)
     const isEditing = editingId === ds.id
     const isSession = ds.source_type === "session"
+    // Virtual datasets come from the worldwide aggregator (#238 / A12):
+    // lazy, not materialized to disk until the user picks a bbox.
+    const isVirtual = ds.source_type === "virtual"
 
     return (
       <div
@@ -177,7 +185,9 @@ export function DatasetsSection() {
         <div className="flex items-center gap-1.5">
           {isSession
             ? <Database size={13} className="shrink-0 text-orange-500" />
-            : <FileType size={13} className="shrink-0 text-primary/70" />
+            : isVirtual
+              ? <Globe size={13} className="shrink-0 text-violet-500" />
+              : <FileType size={13} className="shrink-0 text-primary/70" />
           }
           {isEditing ? (
             <input
@@ -196,6 +206,13 @@ export function DatasetsSection() {
           )}
           {isSession ? (
             <Badge className="text-label-xs h-3.5 px-1 shrink-0 bg-amber-500/10 text-amber-600 border-amber-500/20">PG</Badge>
+          ) : isVirtual ? (
+            <Badge
+              data-testid="dataset-badge-virtual"
+              className="text-label-xs h-3.5 px-1 shrink-0 bg-violet-500/10 text-violet-600 border-violet-500/20"
+            >
+              virtual
+            </Badge>
           ) : (
             <Badge variant="outline" className="text-label-xs h-3.5 px-1 shrink-0 uppercase">{ds.format}</Badge>
           )}
