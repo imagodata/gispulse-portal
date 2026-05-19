@@ -36,8 +36,27 @@ export interface DatasetMeta {
   /** Full advanced style definitions keyed by layer name (from QGIS QML parsing). */
   style_defs?: Record<string, Record<string, unknown>>
   created_at: string
-  source_type?: "project" | "session"  // defaults to "project"
+  /**
+   * Dataset provenance:
+   * - "project" (default) — a real dataset materialised on disk
+   * - "session"           — a PostGIS-backed live session dataset
+   * - "virtual"           — a lazy worldwide catalog entry, not yet
+   *                         materialised (issue #238 / A12)
+   */
+  source_type?: "project" | "session" | "virtual"
   session_id?: string                   // set when source_type is "session"
+
+  // ─── Virtual dataset fields (worldwide aggregator, #238) ─────────────────
+  /** URI of the remote worldwide source backing a virtual dataset. */
+  virtual_source_uri?: string
+  /** Thematic data category of the virtual source. */
+  data_category?: string
+  /** Feature count of the previewed bbox; null until previewed. */
+  feature_count?: number | null
+  /** Bounding box used for the last preview/scan; null until previewed. */
+  virtual_bbox?: number[] | null
+  /** Worldwide catalog entry id this virtual dataset was created from. */
+  catalog_entry?: string
 }
 
 export interface CapabilitySchema {

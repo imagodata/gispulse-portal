@@ -6,18 +6,19 @@
  */
 
 import { useEffect, useState, useCallback, Suspense, lazy } from "react"
-import { Search, Star, X, Globe, Map, Layers, Compass, ChevronRight, Download, MapPin } from "lucide-react"
+import { Search, Star, X, Globe, Map, Layers, Compass, ChevronRight, Download, MapPin, Earth } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { toast } from "sonner"
-import { useCatalogStore, detectSpatialContext } from "@/stores/catalogStore"
+import { useCatalogStore, detectSpatialContext, type CatalogTab } from "@/stores/catalogStore"
 import { useCatalogFavoritesStore } from "@/stores/catalogFavoritesStore"
 import { useDatasetStore } from "@/stores/datasetStore"
 import { useUIStore } from "@/stores/uiStore"
 import { useMapViewStore, layerKey } from "@/stores/mapViewStore"
 import { useExternalLayersStore } from "@/stores/externalLayersStore"
 import { importDatasetFromUrl } from "@/api/client"
+import { createVirtualDataset, type CatalogImportResult } from "@/api/catalog"
 import { navigateToView } from "@/router"
 import {
   BasemapCard,
@@ -27,6 +28,9 @@ import {
 } from "@/components/CatalogCard"
 import { SmartSuggestions } from "@/components/SmartSuggestions"
 import { CatalogImportDialog } from "@/components/CatalogImportDialog"
+import { WorldwideEntryCard } from "@/components/WorldwideEntryCard"
+import { WorldwideMaterializeDialog } from "@/components/WorldwideMaterializeDialog"
+import { useT } from "@/i18n/useT"
 import type { CatalogDomain } from "@/types/catalog"
 import type {
   BasemapEntry,
@@ -34,7 +38,9 @@ import type {
   FluxEntry,
   OpenDataEntry,
   CatalogEntry,
+  WorldwideEntry,
 } from "@/types/catalog"
+import type { DatasetMeta } from "@/types/dataset"
 
 // Lazy import of mini-map to avoid loading MapLibre until needed
 const CatalogExtentMap = lazy(() =>
@@ -44,7 +50,7 @@ const CatalogExtentMap = lazy(() =>
 // ---------- Domain definitions ----------
 
 interface DomainDef {
-  value: CatalogDomain
+  value: CatalogTab
   label: string
   icon: typeof Map
   description: string
@@ -55,6 +61,8 @@ const DOMAINS: DomainDef[] = [
   { value: "flux", label: "Flux OGC", icon: Layers, description: "WMS, WFS, WMTS, OGC Features" },
   { value: "opendata", label: "Open Data", icon: Globe, description: "Jeux de données téléchargeables" },
   { value: "projection", label: "Projections", icon: Compass, description: "Systèmes de coordonnées" },
+  // Worldwide aggregator tab (issue #238 / A12) — global geo-data catalog.
+  { value: "worldwide", label: "Worldwide", icon: Earth, description: "Catalogue mondial" },
 ]
 
 // ---------- Protocol / provider filter helpers ----------
@@ -70,8 +78,8 @@ function getProviders(entries: CatalogEntry[]): string[] {
 // ---------- Sidebar ----------
 
 interface SidebarProps {
-  domain: CatalogDomain
-  onDomainChange: (d: CatalogDomain) => void
+  domain: CatalogTab
+  onDomainChange: (d: CatalogTab) => void
   protocolFilter: string | null
   onProtocolFilter: (p: string | null) => void
   providerFilter: string | null
@@ -82,6 +90,10 @@ interface SidebarProps {
   showFavoritesOnly: boolean
   onToggleFavorites: () => void
   totalEntries: number
+  /** Worldwide jurisdiction pre-filter (#238) — only shown on the worldwide tab. */
+  jurisdictionFilter: string | null
+  onJurisdictionFilter: (j: string | null) => void
+  availableJurisdictions: string[]
 }
 
 function Sidebar({
@@ -97,6 +109,9 @@ function Sidebar({
   showFavoritesOnly,
   onToggleFavorites,
   totalEntries,
+  jurisdictionFilter,
+  onJurisdictionFilter,
+  availableJurisdictions,
 }: SidebarProps) {
   return (
     <div className="flex flex-col h-full border-r overflow-hidden w-(--width-sidebar) shrink-0">
@@ -179,8 +194,32 @@ function Sidebar({
           </div>
         )}
 
+        {/* Jurisdiction pre-filter (Worldwide only) — issue #238 / A12 */}
+        {domain === "worldwide" && availableJurisdictions.length > 0 && (
+          <div className="px-2 py-2 border-t">
+            <p className="px-2 pt-1 pb-1 text-label font-semibold uppercase tracking-wider text-muted-foreground">
+              Jurisdiction
+            </p>
+            {availableJurisdictions.map((j) => (
+              <button
+                key={j}
+                data-testid={`worldwide-jurisdiction-${j}`}
+                onClick={() => onJurisdictionFilter(jurisdictionFilter === j ? null : j)}
+                className={`w-full flex items-center gap-2 rounded-md px-2 py-1 text-left text-xs transition-colors ${
+                  jurisdictionFilter === j
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "text-foreground hover:bg-accent"
+                }`}
+              >
+                <span className="font-mono uppercase text-label">{j}</span>
+                {jurisdictionFilter === j && <X size={10} className="ml-auto" />}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Provider filter */}
-        {availableProviders.length > 0 && (
+        {domain !== "worldwide" && availableProviders.length > 0 && (
           <div className="px-2 py-2 border-t">
             <p className="px-2 pt-1 pb-1 text-label font-semibold uppercase tracking-wider text-muted-foreground">
               Provider
@@ -621,9 +660,12 @@ export function CatalogWorkspace() {
   const {
     tab, search, loading,
     projections, basemaps, flux, opendata,
+    worldwide, worldwideFilters, virtualDatasets,
     spatialContext,
     setTab, setSearch, fetchTab, fetchProviders, setSpatialContext,
+    setWorldwideFilters, upsertVirtualDataset,
   } = useCatalogStore()
+  const t = useT()
 
   const datasets = useDatasetStore((s) => s.datasets)
   const addDataset = useDatasetStore((s) => s.addDataset)
@@ -642,6 +684,15 @@ export function CatalogWorkspace() {
   const [imported, setImported] = useState<Set<string>>(new Set())
   const [importDialogEntry, setImportDialogEntry] = useState<AnyEntry | null>(null)
 
+  // ─── Worldwide aggregator state (#238 / A12) ──────────────────────────────
+  const [selectedWorldwideId, setSelectedWorldwideId] = useState<string | null>(null)
+  const [worldwideBusy, setWorldwideBusy] = useState<string | null>(null)
+  /** entry.id of worldwide entries that have been materialized this session. */
+  const [materializedEntries, setMaterializedEntries] = useState<Set<string>>(new Set())
+  /** Worldwide entry currently open in the materialize dialog. */
+  const [materializeEntry, setMaterializeEntry] = useState<WorldwideEntry | null>(null)
+  const jurisdictionFilter = worldwideFilters.jurisdiction ?? null
+
   // Sync spatial context
   useEffect(() => {
     const ctx = detectSpatialContext(datasets)
@@ -655,23 +706,36 @@ export function CatalogWorkspace() {
   }, [])
 
   // Reset filters when domain changes
-  const handleDomainChange = useCallback((d: CatalogDomain) => {
+  const handleDomainChange = useCallback((d: CatalogTab) => {
     setTab(d)
     setProtocolFilter(null)
     setProviderFilter(null)
     setSelectedEntry(null)
+    setSelectedWorldwideId(null)
     setShowFavoritesOnly(false)
   }, [setTab])
 
-  // Get current domain entries
+  // Get current domain entries (worldwide handled by its own grid)
   const rawEntries: AnyEntry[] = (() => {
     switch (tab) {
       case "basemap": return basemaps
       case "flux": return flux
       case "opendata": return opendata
       case "projection": return projections
+      case "worldwide": return []
     }
   })()
+
+  // Apply jurisdiction pre-filter client-side as a safety net; the store
+  // already passes `jurisdiction` to the backend, but this keeps the gallery
+  // consistent if the server returns a broader set.
+  const filteredWorldwide = jurisdictionFilter
+    ? worldwide.filter((e) => e.jurisdiction === jurisdictionFilter)
+    : worldwide
+
+  const availableJurisdictions = Array.from(
+    new Set(worldwide.map((e) => e.jurisdiction)),
+  ).sort()
 
   // Apply favorites filter
   const favSet = new Set(favorites.map((f) => f.id))
@@ -759,7 +823,91 @@ export function CatalogWorkspace() {
     navigateToView("map")
   }, [addFluxLayer, hasLayer])
 
-  const totalEntries = basemaps.length + flux.length + opendata.length + projections.length
+  // ─── Worldwide aggregator handlers (#238 / A12) ──────────────────────────
+
+  // Look up the virtual dataset created from a worldwide entry, if any.
+  const virtualForEntry = useCallback(
+    (entry: WorldwideEntry) =>
+      Object.values(virtualDatasets).find(
+        (ds) => ds.catalog_entry === entry.id,
+      ) ?? null,
+    [virtualDatasets],
+  )
+
+  const handleJurisdictionFilter = useCallback(
+    (j: string | null) => {
+      setWorldwideFilters({ ...worldwideFilters, jurisdiction: j ?? undefined })
+    },
+    [setWorldwideFilters, worldwideFilters],
+  )
+
+  // Create a virtual (lazy) dataset from a worldwide catalog entry.
+  const handleCreateVirtual = useCallback(
+    async (entry: WorldwideEntry) => {
+      setWorldwideBusy(entry.id)
+      try {
+        const ds = await createVirtualDataset(entry.id)
+        // Stamp the originating entry so the card can pair virtual ↔ entry.
+        const stamped = { ...ds, catalog_entry: ds.catalog_entry ?? entry.id }
+        upsertVirtualDataset(stamped)
+        addDataset(stamped)
+        toast.success(t("worldwide.virtual.created"))
+      } catch (err) {
+        toast.error(
+          "Virtual dataset failed: " +
+            (err instanceof Error ? err.message : String(err)),
+        )
+      } finally {
+        setWorldwideBusy(null)
+      }
+    },
+    [addDataset, upsertVirtualDataset, t],
+  )
+
+  // Open the materialize dialog for a worldwide entry's virtual dataset.
+  const handleOpenMaterialize = useCallback((entry: WorldwideEntry) => {
+    setMaterializeEntry(entry)
+  }, [])
+
+  // Preview updated stats (feature_count / virtual_bbox) — keep store in sync.
+  const handleWorldwidePreviewed = useCallback(
+    (ds: DatasetMeta) => {
+      upsertVirtualDataset(ds)
+    },
+    [upsertVirtualDataset],
+  )
+
+  // Materialization succeeded — the dataset flips from `virtual` to `project`.
+  const handleWorldwideMaterialized = useCallback(
+    (result: CatalogImportResult) => {
+      const ds: DatasetMeta = {
+        id: result.id,
+        name: result.name,
+        source_path: result.source_path ?? "",
+        format: result.format ?? "gpkg",
+        crs: result.crs ?? "EPSG:4326",
+        file_size: result.file_size ?? 0,
+        layers: (result.layers as DatasetMeta["layers"]) ?? [],
+        created_at: result.created_at ?? new Date().toISOString(),
+        source_type: "project",
+        catalog_entry: result.catalog_entry,
+      }
+      addDataset(ds)
+      for (const l of ds.layers) {
+        const ln = (l as { name?: string }).name
+        if (ln) addLayer(layerKey(ds.id, ln))
+      }
+      if (materializeEntry) {
+        // Flip the badge: virtual → project.
+        setMaterializedEntries((s) => new Set(s).add(materializeEntry.id))
+      }
+      setMaterializeEntry(null)
+      toast.success(t("worldwide.virtual.materialized"))
+    },
+    [addDataset, addLayer, materializeEntry, t],
+  )
+
+  const totalEntries = basemaps.length + flux.length + opendata.length + projections.length + worldwide.length
 
   // Memoized callbacks to avoid re-rendering child components on each render (#199)
   const handleToggleFavorites = useCallback(() => setShowFavoritesOnly((v) => !v), [])
@@ -789,6 +937,9 @@ export function CatalogWorkspace() {
         showFavoritesOnly={showFavoritesOnly}
         onToggleFavorites={handleToggleFavorites}
         totalEntries={totalEntries}
+        jurisdictionFilter={jurisdictionFilter}
+        onJurisdictionFilter={handleJurisdictionFilter}
+        availableJurisdictions={availableJurisdictions}
       />
 
       {/* Center: search + grid */}
@@ -846,10 +997,10 @@ export function CatalogWorkspace() {
         )}
 
         {/* Grid */}
-        {!loading && (
+        {!loading && tab !== "worldwide" && (
           <ScrollArea className="flex-1">
             <CatalogGrid
-              domain={tab}
+              domain={tab as CatalogDomain}
               entries={filteredEntries}
               selectedId={selectedEntry?.id ?? null}
               onSelect={handleSelectEntry}
@@ -863,19 +1014,57 @@ export function CatalogWorkspace() {
             />
           </ScrollArea>
         )}
+
+        {/* Worldwide aggregator gallery (#238 / A12) */}
+        {!loading && tab === "worldwide" && (
+          <ScrollArea className="flex-1">
+            {filteredWorldwide.length === 0 ? (
+              <div className="flex flex-col items-center justify-center flex-1 text-center py-16">
+                <Earth size={24} className="text-muted-foreground/30 mb-2" />
+                <p className="text-sm text-muted-foreground">{t("worldwide.empty")}</p>
+              </div>
+            ) : (
+              <div
+                className="grid grid-cols-1 gap-2 p-4 sm:grid-cols-2 xl:grid-cols-3"
+                data-testid="worldwide-gallery"
+              >
+                {filteredWorldwide.map((entry) => {
+                  const virtual = virtualForEntry(entry)
+                  return (
+                    <WorldwideEntryCard
+                      key={entry.id}
+                      entry={entry}
+                      selected={selectedWorldwideId === entry.id}
+                      onSelect={() =>
+                        setSelectedWorldwideId((p) => (p === entry.id ? null : entry.id))
+                      }
+                      virtual={virtual}
+                      materialized={materializedEntries.has(entry.id)}
+                      busy={worldwideBusy === entry.id}
+                      onCreateVirtual={() => handleCreateVirtual(entry)}
+                      onMaterialize={() => handleOpenMaterialize(entry)}
+                    />
+                  )
+                })}
+              </div>
+            )}
+          </ScrollArea>
+        )}
       </div>
 
-      {/* Right inspector */}
-      <Inspector
-        entry={selectedEntry}
-        domain={tab}
-        epsgCodes={spatialContext.epsgCodes}
-        onClose={handleCloseInspector}
-        onImport={handleImport}
-        onImportAdvanced={handleOpenImportDialog}
-        importing={importing === selectedEntry?.id}
-        imported={selectedEntry ? imported.has(selectedEntry.id) : false}
-      />
+      {/* Right inspector — domain catalogs only (worldwide uses the gallery) */}
+      {tab !== "worldwide" && (
+        <Inspector
+          entry={selectedEntry}
+          domain={tab as CatalogDomain}
+          epsgCodes={spatialContext.epsgCodes}
+          onClose={handleCloseInspector}
+          onImport={handleImport}
+          onImportAdvanced={handleOpenImportDialog}
+          importing={importing === selectedEntry?.id}
+          imported={selectedEntry ? imported.has(selectedEntry.id) : false}
+        />
+      )}
 
       {/* Import dialog with bbox selection */}
       {importDialogEntry && (
@@ -885,6 +1074,22 @@ export function CatalogWorkspace() {
           onImported={handleImportDialogResult}
         />
       )}
+
+      {/* Worldwide materialize dialog (#238 / A12) */}
+      {materializeEntry && (() => {
+        const virtual = virtualForEntry(materializeEntry)
+        if (!virtual) return null
+        return (
+          <WorldwideMaterializeDialog
+            key={materializeEntry.id}
+            entry={materializeEntry}
+            virtual={virtual}
+            onClose={() => setMaterializeEntry(null)}
+            onPreviewed={handleWorldwidePreviewed}
+            onMaterialized={handleWorldwideMaterialized}
+          />
+        )
+      })()}
     </div>
   )
 }

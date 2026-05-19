@@ -12,16 +12,24 @@ import type {
   FluxEntry,
   OpenDataEntry,
   CatalogProviderInfo,
+  WorldwideEntry,
+  WorldwideFilters,
 } from "@/types/catalog"
+import type { DatasetMeta } from "@/types/dataset"
 import {
   searchProjections,
   searchBasemaps,
   searchFlux,
   searchOpenData,
   listCatalogProviders,
+  searchWorldwide,
 } from "@/api/client"
 
-type CatalogTab = CatalogDomain
+/**
+ * Catalog tabs. "worldwide" (issue #238 / A12) is an extra tab beyond the
+ * four canonical catalog domains — it browses the global aggregated catalog.
+ */
+export type CatalogTab = CatalogDomain | "worldwide"
 
 /** Detected spatial context from loaded datasets */
 export interface SpatialContext {
@@ -40,6 +48,13 @@ interface CatalogState {
   opendata: OpenDataEntry[]
   providers: CatalogProviderInfo[]
 
+  // Worldwide aggregator (#238 / A12)
+  worldwide: WorldwideEntry[]
+  /** Pre-filter applied to the worldwide tab (jurisdiction, domain, …). */
+  worldwideFilters: WorldwideFilters
+  /** Virtual datasets created from worldwide entries, keyed by virtual id. */
+  virtualDatasets: Record<string, DatasetMeta>
+
   // Smart context
   spatialContext: SpatialContext
 
@@ -48,6 +63,12 @@ interface CatalogState {
   fetchTab: (tab?: CatalogTab, search?: string) => Promise<void>
   fetchProviders: () => Promise<void>
   setSpatialContext: (ctx: SpatialContext) => void
+
+  // Worldwide actions (#238 / A12)
+  setWorldwideFilters: (filters: WorldwideFilters) => void
+  fetchWorldwide: (search?: string) => Promise<void>
+  upsertVirtualDataset: (ds: DatasetMeta) => void
+  removeVirtualDataset: (virtualId: string) => void
 }
 
 /** Infer a country hint from a WGS84 bounding box */
@@ -128,6 +149,9 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
   flux: [],
   opendata: [],
   providers: [],
+  worldwide: [],
+  worldwideFilters: {},
+  virtualDatasets: {},
   spatialContext: { epsgCodes: [], bbox: null, country: null },
 
   setTab: (tab) => {
@@ -168,6 +192,14 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
         case "opendata":
           set({ opendata: await searchOpenData(q || undefined, signal) })
           break
+        case "worldwide": {
+          const filters: WorldwideFilters = {
+            ...get().worldwideFilters,
+            search: q || undefined,
+          }
+          set({ worldwide: await searchWorldwide(filters, signal) })
+          break
+        }
       }
     } catch (err) {
       // AbortError is expected when a newer fetch supersedes this one — silence it
@@ -188,4 +220,47 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
   },
 
   setSpatialContext: (ctx) => set({ spatialContext: ctx }),
+
+  // ─── Worldwide aggregator (#238 / A12) ──────────────────────────────────
+
+  setWorldwideFilters: (filters) => {
+    set({ worldwideFilters: filters })
+    // Re-fetch immediately so the gallery reflects the new pre-filter.
+    if (get().tab === "worldwide") {
+      get().fetchWorldwide(get().search)
+    }
+  },
+
+  fetchWorldwide: async (search) => {
+    const q = search ?? get().search
+
+    // Cancel any in-flight fetch before launching a new one (#207)
+    _fetchAbortController?.abort()
+    _fetchAbortController = new AbortController()
+    const { signal } = _fetchAbortController
+
+    set({ loading: true })
+    try {
+      const filters: WorldwideFilters = {
+        ...get().worldwideFilters,
+        search: q || undefined,
+      }
+      set({ worldwide: await searchWorldwide(filters, signal) })
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return
+      console.error("Worldwide catalog fetch failed:", err)
+    } finally {
+      if (!signal.aborted) set({ loading: false })
+    }
+  },
+
+  upsertVirtualDataset: (ds) =>
+    set((s) => ({ virtualDatasets: { ...s.virtualDatasets, [ds.id]: ds } })),
+
+  removeVirtualDataset: (virtualId) =>
+    set((s) => {
+      const next = { ...s.virtualDatasets }
+      delete next[virtualId]
+      return { virtualDatasets: next }
+    }),
 }))
