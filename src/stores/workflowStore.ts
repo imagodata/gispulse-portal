@@ -180,7 +180,10 @@ export const useWorkflowStore = create<WorkflowState>((set) => ({
       if (data.nodes && data.edges) {
         return { graph: data as ScenarioGraph, name: data.name || "Imported Workflow" }
       }
-      // PipelineSpec v2: convert steps to ScenarioGraph
+      // PipelineSpec v2: convert steps to ScenarioGraph.
+      // Issue #108: dropped the synchronous `require()` shim — pulled
+      // the symbol into the static import block above so the bundle is
+      // ESM-strict and `tsc --noEmit` no longer trips on TS2591.
       if (data.version === 2 && Array.isArray(data.steps)) {
         const { nodes, edges } = pipelineSpecToGraph(data)
         const graph: ScenarioGraph = {

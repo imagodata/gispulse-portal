@@ -3,9 +3,12 @@
  *
  * Issue #194 (A7-S3): extracted from the monolithic client.ts.
  * Sprint W1: added listScenarios, deleteScenario for Workflow Manager.
+ * Issue #108 (Realign 2.0): switched to `originRequest` — backend
+ *   mounts the router at `/scenarios` (root, NOT `/api/portal`). Now
+ *   honours `settingsStore.backendUrl` for Mode 2.
  */
 
-import { request } from "./request"
+import { originRequest } from "./request"
 import type { ScenarioGraph } from "@/lib/graphSerializer"
 
 export interface ScenarioResponse {
@@ -54,44 +57,42 @@ export async function listScenarios(
   limit = 50,
   offset = 0,
 ): Promise<ScenarioListResponse> {
-  return request<ScenarioListResponse>(
+  return originRequest<ScenarioListResponse>(
     `/scenarios?limit=${limit}&offset=${offset}`,
-    undefined,
-    "",
   )
 }
 
 export async function createScenario(graph: ScenarioGraph): Promise<ScenarioResponse> {
-  return request<ScenarioResponse>("/scenarios", {
+  return originRequest<ScenarioResponse>("/scenarios", {
     method: "POST",
     body: JSON.stringify(graph),
-  }, "")
+  })
 }
 
 export async function getScenario(id: string): Promise<ScenarioResponse> {
-  return request<ScenarioResponse>(`/scenarios/${id}`, undefined, "")
+  return originRequest<ScenarioResponse>(`/scenarios/${id}`)
 }
 
 export async function updateScenario(
   id: string,
   graph: ScenarioGraph,
 ): Promise<ScenarioResponse> {
-  return request<ScenarioResponse>(`/scenarios/${id}`, {
+  return originRequest<ScenarioResponse>(`/scenarios/${id}`, {
     method: "PUT",
     body: JSON.stringify(graph),
-  }, "")
+  })
 }
 
 export async function deleteScenario(id: string): Promise<void> {
-  return request<void>(`/scenarios/${id}`, {
+  return originRequest<void>(`/scenarios/${id}`, {
     method: "DELETE",
-  }, "")
+  })
 }
 
 export async function runScenario(id: string): Promise<ScenarioRunResult> {
-  return request<ScenarioRunResult>(`/scenarios/${id}/run`, {
+  return originRequest<ScenarioRunResult>(`/scenarios/${id}/run`, {
     method: "POST",
-  }, "")
+  })
 }
 
 export async function runScenarioNode(
@@ -99,8 +100,8 @@ export async function runScenarioNode(
   nodeId: string,
   overrideParams: Record<string, unknown> = {},
 ): Promise<RunNodeResult> {
-  return request<RunNodeResult>(`/scenarios/${scenarioId}/run-node`, {
+  return originRequest<RunNodeResult>(`/scenarios/${scenarioId}/run-node`, {
     method: "POST",
     body: JSON.stringify({ node_id: nodeId, override_params: overrideParams }),
-  }, "")
+  })
 }
