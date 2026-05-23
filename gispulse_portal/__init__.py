@@ -25,7 +25,7 @@ __all__ = ["PORTAL_DIST_PATH", "__version__"]
 # Single source of truth for the package version. Bumped by the
 # release workflow before ``python -m build`` runs (see
 # ``.github/workflows/release.yml``).
-__version__ = "1.5.2"
+__version__ = "2.0.0"
 
 
 def _resolve_dist_path() -> Path:
