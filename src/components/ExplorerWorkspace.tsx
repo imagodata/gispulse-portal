@@ -10,7 +10,7 @@
  * - Quick-import drop zone
  */
 
-import { useState, useCallback, useEffect, useRef } from "react"
+import { useState, useCallback, useEffect } from "react"
 import {
   LayoutGrid,
   List,
@@ -275,7 +275,11 @@ export function ExplorerWorkspace() {
     try {
       await deleteDatasetApi(id)
       removeDataset(id)
-      useMapViewStore.getState().cleanupOrphanedLayers()
+      const validKeys = new Set<string>()
+      for (const ds of useDatasetStore.getState().datasets) {
+        for (const l of ds.layers ?? []) validKeys.add(layerKey(ds.id, l.name))
+      }
+      useMapViewStore.getState().cleanupOrphanedLayers(validKeys)
       toast.success("Dataset deleted")
     } catch (err) {
       toast.error("Delete failed: " + (err instanceof Error ? err.message : String(err)))

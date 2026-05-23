@@ -4,7 +4,7 @@
  * Routes: POST/GET/PATCH/DELETE /schedules, POST /schedules/{id}/run-now
  */
 
-import { request } from "./request"
+import { getOriginBase, request } from "./request"
 
 // ---------------------------------------------------------------------------
 // Types
@@ -65,39 +65,47 @@ export interface ScheduleRun {
 // API functions
 // ---------------------------------------------------------------------------
 
+//
+// `schedules_router` is mounted at the application root with its own
+// `/schedules` prefix — NOT under `/api/portal`. Every call passes
+// `getOriginBase()` to bypass the `/api/portal` suffix while still
+// honoring a Mode 2 custom backend URL.
+
 export async function listSchedules(): Promise<ScheduledPipeline[]> {
-  return request<ScheduledPipeline[]>("/schedules")
+  return request<ScheduledPipeline[]>("/schedules", undefined, getOriginBase())
 }
 
 export async function getSchedule(id: string): Promise<ScheduledPipeline> {
-  return request<ScheduledPipeline>(`/schedules/${id}`)
+  return request<ScheduledPipeline>(`/schedules/${id}`, undefined, getOriginBase())
 }
 
 export async function createSchedule(payload: CreateSchedulePayload): Promise<ScheduledPipeline> {
-  return request<ScheduledPipeline>("/schedules", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  })
+  return request<ScheduledPipeline>(
+    "/schedules",
+    { method: "POST", body: JSON.stringify(payload) },
+    getOriginBase(),
+  )
 }
 
 export async function updateSchedule(
   id: string,
   payload: UpdateSchedulePayload,
 ): Promise<ScheduledPipeline> {
-  return request<ScheduledPipeline>(`/schedules/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify(payload),
-  })
+  return request<ScheduledPipeline>(
+    `/schedules/${id}`,
+    { method: "PATCH", body: JSON.stringify(payload) },
+    getOriginBase(),
+  )
 }
 
 export async function deleteSchedule(id: string): Promise<void> {
-  return request<void>(`/schedules/${id}`, { method: "DELETE" })
+  return request<void>(`/schedules/${id}`, { method: "DELETE" }, getOriginBase())
 }
 
 export async function runNow(id: string): Promise<RunResult> {
-  return request<RunResult>(`/schedules/${id}/run-now`, { method: "POST" })
+  return request<RunResult>(`/schedules/${id}/run-now`, { method: "POST" }, getOriginBase())
 }
 
 export async function listScheduleRuns(id: string): Promise<ScheduleRun[]> {
-  return request<ScheduleRun[]>(`/schedules/${id}/runs`)
+  return request<ScheduleRun[]>(`/schedules/${id}/runs`, undefined, getOriginBase())
 }

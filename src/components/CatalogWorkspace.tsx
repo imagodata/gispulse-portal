@@ -14,7 +14,6 @@ import { toast } from "sonner"
 import { useCatalogStore, detectSpatialContext, type CatalogTab } from "@/stores/catalogStore"
 import { useCatalogFavoritesStore } from "@/stores/catalogFavoritesStore"
 import { useDatasetStore } from "@/stores/datasetStore"
-import { useUIStore } from "@/stores/uiStore"
 import { useMapViewStore, layerKey } from "@/stores/mapViewStore"
 import { useExternalLayersStore } from "@/stores/externalLayersStore"
 import { importDatasetFromUrl } from "@/api/client"
@@ -887,7 +886,7 @@ export function CatalogWorkspace() {
         format: result.format ?? "gpkg",
         crs: result.crs ?? "EPSG:4326",
         file_size: result.file_size ?? 0,
-        layers: (result.layers as DatasetMeta["layers"]) ?? [],
+        layers: (result.layers as unknown as DatasetMeta["layers"]) ?? [],
         created_at: result.created_at ?? new Date().toISOString(),
         source_type: "project",
         catalog_entry: result.catalog_entry,

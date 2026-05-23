@@ -108,6 +108,11 @@ function LayerInspector({ datasetId, layerName }: { datasetId: string; layerName
   const setLayerOpacity = useMapViewStore((s) => s.setLayerOpacity)
   const setLayerVisible = useMapViewStore((s) => s.setLayerVisible)
 
+  // Hooks must run unconditionally — keep `useActiveLayerStyle` above
+  // the `!layer` early return (react-hooks/rules-of-hooks).
+  const key = layerKey(datasetId, layerName)
+  const vis = useActiveLayerStyle(key)
+
   const dataset = datasets.find((d) => d.id === datasetId)
   const layer: LayerMeta | undefined = dataset?.layers.find((l) => l.name === layerName)
 
@@ -115,8 +120,6 @@ function LayerInspector({ datasetId, layerName }: { datasetId: string; layerName
     return <p className="text-xs text-muted-foreground">Layer not found</p>
   }
 
-  const key = layerKey(datasetId, layerName)
-  const vis = useActiveLayerStyle(key)
   const [minX, minY, maxX, maxY] = layer.bbox
 
   return (

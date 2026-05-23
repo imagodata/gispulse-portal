@@ -20,7 +20,7 @@ export interface DatasetItemProps {
     id: string
     name: string
     format: string
-    source_type?: "project" | "session"
+    source_type?: "project" | "session" | "virtual"
     layers: {
       name: string
       geometry_type: string | null

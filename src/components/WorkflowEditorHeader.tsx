@@ -5,7 +5,7 @@
  */
 
 import { useRef, useCallback } from "react"
-import { ArrowLeft, Download, Upload } from "lucide-react"
+import { ArrowLeft, Upload } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { useWorkflowStore } from "@/stores/workflowStore"

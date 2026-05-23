@@ -241,7 +241,7 @@ export function MarketplacePage() {
     fetchCatalog()
   }, [])
 
-  function handleInstalled(pluginId: string) {
+  function handleInstalled(_pluginId: string) {
     // After install, refresh the installed list from the backend
     fetchInstalled()
   }

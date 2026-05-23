@@ -1,25 +1,23 @@
 import { useCallback, useMemo, useRef, useState } from "react"
-import { Search, Eye, EyeOff, ArrowLeft, X, Pencil, FolderPlus, ChevronDown, ChevronRight, FolderInput, Download, Trash2, Database, Link, CheckCircle2, AlertCircle, Copy, ClipboardPaste, Radio } from "lucide-react"
+import { Search, Eye, EyeOff, ArrowLeft, X, FolderPlus, ChevronRight, Download, Trash2, Link, CheckCircle2, AlertCircle, Radio } from "lucide-react"
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core"
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable"
 import { toast } from "sonner"
 import { IconButton } from "@/components/ui/icon-button"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Button } from "@/components/ui/button"
 import { useUIStore, type ActivitySection } from "@/stores/uiStore"
-import { useMapViewStore, useActiveView, useActiveLayerStack, useActiveLayerGroups, layerKey, parseLayerKey } from "@/stores/mapViewStore"
+import { useMapViewStore, useActiveLayerStack, useActiveLayerGroups, layerKey, parseLayerKey } from "@/stores/mapViewStore"
 import { useDatasetStore } from "@/stores/datasetStore"
 import { useProjectStore, useActiveProject } from "@/stores/projectStore"
-import { useMapStore } from "@/stores/mapStore"
-import { uploadDataset, deleteDatasetApi, renameDatasetApi, exportGpkg, importDatasetFromUrl, DuplicateDatasetError } from "@/api/client"
+import { uploadDataset, exportGpkg, importDatasetFromUrl, DuplicateDatasetError } from "@/api/client"
 import { useExternalLayersStore, type ExternalLayer } from "@/stores/externalLayersStore"
+import type { LayerVisibility } from "@/types/project"
 import { SceneManager } from "./SceneManager"
-import { GeomIcon, SortableLayerItem, LayerGroupItem, BulkActionsBar, LayerItemButton, DatasetItem } from "./layers"
+import { SortableLayerItem, LayerGroupItem, BulkActionsBar, LayerItemButton, DatasetItem } from "./layers"
 import { StyleEditorPanel } from "./style"
 
 import { SectionHeader } from "@/components/panels/SectionHeader"
-import { LayerContextMenu } from "./layers/LayerContextMenu"
 
 // LayerItemButton and DatasetItem extracted to ./layers/ (#408)
 
@@ -27,7 +25,6 @@ import { LayerContextMenu } from "./layers/LayerContextMenu"
 
 function ExternalLayerItem({ layer }: { layer: ExternalLayer }) {
   const setVisible = useExternalLayersStore((s) => s.setVisible)
-  const setOpacity = useExternalLayersStore((s) => s.setOpacity)
   const removeLayer = useExternalLayersStore((s) => s.removeLayer)
 
   return (
@@ -151,7 +148,7 @@ function LayersSection() {
 
   // Build a lookup for layer visibility from layerStack
   const layerVisibility = useMemo(() => {
-    const vis: Record<string, { visible?: boolean; opacity?: number; color?: string; displayName?: string; strokeColor?: string; strokeWidth?: number }> = {}
+    const vis: Record<string, LayerVisibility> = {}
     for (const l of layerStack) {
       vis[l.key] = { visible: l.visible, opacity: l.opacity, color: l.color, displayName: l.displayName, strokeColor: l.strokeColor, strokeWidth: l.strokeWidth }
     }

@@ -52,7 +52,7 @@ import { useUndoRedo } from "@/hooks/useUndoRedo"
 import { useAutoLayout } from "@/hooks/useAutoLayout"
 import { serializeGraph, graphToPipelineSpec, pipelineSpecToGraph } from "@/lib/graphSerializer"
 import { createScenario, updateScenario, runScenarioNode } from "@/api/client"
-import { templateToGraph } from "@/stores/templateStore"
+import { templateToGraph, type NodeTemplate } from "@/stores/templateStore"
 import { SaveTemplateDialog } from "./SaveTemplateDialog"
 import {
   PORT_SPECS,
@@ -605,7 +605,10 @@ function NodeEditorInner() {
 
       // Template drop: expand full graph at drop position
       if (payload.type === "__template" && payload.nodes && payload.edges) {
-        const tpl = { nodes: payload.nodes, edges: payload.edges } as { nodes: Node[]; edges: Edge[] }
+        // The drop payload is a serialized NodeTemplate; only `nodes` and
+        // `edges` are read by templateToGraph, so the runtime-validated
+        // partial is cast to the full type.
+        const tpl = { nodes: payload.nodes, edges: payload.edges } as unknown as NodeTemplate
         const { nodes: newNodes, edges: newEdges } = templateToGraph(
           tpl,
           position.x,
@@ -900,7 +903,7 @@ function NodeEditorInner() {
   const closeCtxMenu = useCallback(() => setCtxMenu(null), [])
 
   const onPaneContextMenu = useCallback(
-    (event: React.MouseEvent) => {
+    (event: MouseEvent | React.MouseEvent) => {
       event.preventDefault()
       setCtxMenu({ type: "canvas", position: { x: event.clientX, y: event.clientY } })
     },

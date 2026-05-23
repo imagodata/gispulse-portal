@@ -5,7 +5,7 @@
  * PipelineSpec v2 definitions.
  */
 
-import { request } from "./request"
+import { getOriginBase, request } from "./request"
 
 // ---------------------------------------------------------------------------
 // Types
@@ -73,6 +73,11 @@ export interface PipelineSpecV2 {
 
 // ---------------------------------------------------------------------------
 // API calls
+//
+// The backend mounts `pipelines_router` at the application root with
+// its own `/pipelines` prefix — NOT under `/api/portal`. Every call
+// passes `getOriginBase()` to bypass the `/api/portal` suffix while
+// still honoring a Mode 2 custom backend URL.
 // ---------------------------------------------------------------------------
 
 const PREFIX = "/pipelines"
@@ -81,10 +86,11 @@ const PREFIX = "/pipelines"
 export async function executePipeline(
   payload: PipelineExecuteRequest,
 ): Promise<PipelineExecuteResponse> {
-  return request<PipelineExecuteResponse>(`${PREFIX}/execute`, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  })
+  return request<PipelineExecuteResponse>(
+    `${PREFIX}/execute`,
+    { method: "POST", body: JSON.stringify(payload) },
+    getOriginBase(),
+  )
 }
 
 /** Validate a PipelineSpec without executing. */
@@ -92,13 +98,14 @@ export async function validatePipeline(
   steps: StepSpecIn[],
   refLayers?: Record<string, string>,
 ): Promise<PipelineValidateResponse> {
-  return request<PipelineValidateResponse>(`${PREFIX}/validate`, {
-    method: "POST",
-    body: JSON.stringify({ steps, ref_layers: refLayers ?? {} }),
-  })
+  return request<PipelineValidateResponse>(
+    `${PREFIX}/validate`,
+    { method: "POST", body: JSON.stringify({ steps, ref_layers: refLayers ?? {} }) },
+    getOriginBase(),
+  )
 }
 
 /** List built-in pipeline examples. */
 export async function listPipelineExamples(): Promise<PipelineExample[]> {
-  return request<PipelineExample[]>(`${PREFIX}/examples`)
+  return request<PipelineExample[]>(`${PREFIX}/examples`, undefined, getOriginBase())
 }
