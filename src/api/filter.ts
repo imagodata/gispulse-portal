@@ -1,12 +1,24 @@
 /**
  * api/filter.ts — Filter API client functions.
  *
- * Endpoints for the interactive FilterPanel, now with chain, validate, and cache.
+ * Backend mount: `/api/filter` (router carries its own `/api` prefix,
+ * mounted at the origin root). Endpoints for the interactive
+ * FilterPanel, now with chain, validate, and cache.
+ *
+ * Issue #108 (Realign 2.0): the base is now composed via
+ * `getOriginBase()` so Mode 2 ("Connect your engine") routes filter
+ * calls to the external backend instead of pinning to same-origin.
  */
 
-import { request } from "./request"
+import { getOriginBase, request } from "./request"
 
-const FILTER_BASE = "/api/filter"
+/**
+ * Live resolver for the filter base — re-read at every call so a
+ * `backendUrl` change is honoured immediately.
+ */
+function filterBase(): string {
+  return `${getOriginBase()}/api/filter`
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -88,7 +100,7 @@ export interface SpatialPredicateInfo {
 
 /** List available spatial predicates. */
 export async function listPredicates(): Promise<SpatialPredicateInfo[]> {
-  return request<SpatialPredicateInfo[]>("/predicates", undefined, FILTER_BASE)
+  return request<SpatialPredicateInfo[]>("/predicates", undefined, filterBase())
 }
 
 /** Preview filter: count + bbox without returning features. */
@@ -96,7 +108,7 @@ export async function previewFilter(req: FilterRequest): Promise<FilterPreviewRe
   return request<FilterPreviewResponse>("/preview", {
     method: "POST",
     body: JSON.stringify(req),
-  }, FILTER_BASE)
+  }, filterBase())
 }
 
 /** Apply filter and return GeoJSON features. */
@@ -104,7 +116,7 @@ export async function applyFilter(req: FilterRequest): Promise<FilterApplyRespon
   return request<FilterApplyResponse>("/apply", {
     method: "POST",
     body: JSON.stringify(req),
-  }, FILTER_BASE)
+  }, filterBase())
 }
 
 /** Apply a multi-step FilterChain. */
@@ -112,7 +124,7 @@ export async function applyChain(req: FilterChainRequest): Promise<FilterApplyRe
   return request<FilterApplyResponse>("/chain", {
     method: "POST",
     body: JSON.stringify(req),
-  }, FILTER_BASE)
+  }, filterBase())
 }
 
 /** Validate a filter expression without executing it. */
@@ -120,16 +132,16 @@ export async function validateExpression(expression: string): Promise<FilterVali
   return request<FilterValidateResponse>("/validate", {
     method: "POST",
     body: JSON.stringify({ expression }),
-  }, FILTER_BASE)
+  }, filterBase())
 }
 
 /** Get filter cache statistics. */
 export async function getCacheStats(): Promise<CacheStatsResponse> {
-  return request<CacheStatsResponse>("/cache/stats", undefined, FILTER_BASE)
+  return request<CacheStatsResponse>("/cache/stats", undefined, filterBase())
 }
 
 /** Clear filter cache (optionally for a specific layer). */
 export async function clearCache(layerKey?: string): Promise<{ cleared: number }> {
   const params = layerKey ? `?layer_key=${encodeURIComponent(layerKey)}` : ""
-  return request<{ cleared: number }>(`/cache${params}`, { method: "DELETE" }, FILTER_BASE)
+  return request<{ cleared: number }>(`/cache${params}`, { method: "DELETE" }, filterBase())
 }

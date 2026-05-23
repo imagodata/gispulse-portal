@@ -1,14 +1,20 @@
 /**
  * api/marketplace.ts — Plugin marketplace endpoints.
  *
- * Connects to the backend marketplace router:
+ * Backend mount: `/marketplace` (root, NOT `/api/portal`). Connects to:
  *   GET  /marketplace/plugins                  — list installed plugins
  *   GET  /marketplace/catalog                  — browse available plugins
  *   POST /marketplace/plugins/:id/install      — install a plugin
  *   DELETE /marketplace/plugins/:id/uninstall  — uninstall a plugin
+ *
+ * Issue #108 (Realign 2.0): pre-fix this module called `request()`
+ * which prefixed `/api/portal/` — that produced 404s on every endpoint
+ * (the marketplace router has no `/api/portal` prefix). Switched to
+ * `originRequest()` so the URLs hit the correct mount and Mode 2
+ * ("Connect your engine") routes to the user's backend.
  */
 
-import { getOriginBase, request } from "./request"
+import { originRequest } from "./request"
 
 // ---------------------------------------------------------------------------
 // Types
@@ -50,15 +56,10 @@ interface PluginActionResponse {
 
 // ---------------------------------------------------------------------------
 // API functions
-//
-// `marketplace_router` is mounted at the application root with its own
-// `/marketplace` prefix — NOT under `/api/portal`. Every call passes
-// `getOriginBase()` to bypass the `/api/portal` suffix while still
-// honoring a Mode 2 custom backend URL.
 // ---------------------------------------------------------------------------
 
 export async function listInstalled(): Promise<InstalledPlugin[]> {
-  return request<InstalledPlugin[]>("/marketplace/plugins", undefined, getOriginBase())
+  return originRequest<InstalledPlugin[]>("/marketplace/plugins")
 }
 
 export async function searchPlugins(query?: string, category?: PluginCategory): Promise<Plugin[]> {
@@ -66,25 +67,17 @@ export async function searchPlugins(query?: string, category?: PluginCategory): 
   if (query) params.set("q", query)
   if (category) params.set("category", category)
   const qs = params.toString()
-  return request<Plugin[]>(
-    `/marketplace/catalog${qs ? `?${qs}` : ""}`,
-    undefined,
-    getOriginBase(),
-  )
+  return originRequest<Plugin[]>(`/marketplace/catalog${qs ? `?${qs}` : ""}`)
 }
 
 export async function installPlugin(id: string): Promise<PluginActionResponse> {
-  return request<PluginActionResponse>(
-    `/marketplace/plugins/${encodeURIComponent(id)}/install`,
-    { method: "POST" },
-    getOriginBase(),
-  )
+  return originRequest<PluginActionResponse>(`/marketplace/plugins/${encodeURIComponent(id)}/install`, {
+    method: "POST",
+  })
 }
 
 export async function uninstallPlugin(id: string): Promise<PluginActionResponse> {
-  return request<PluginActionResponse>(
-    `/marketplace/plugins/${encodeURIComponent(id)}/uninstall`,
-    { method: "DELETE" },
-    getOriginBase(),
-  )
+  return originRequest<PluginActionResponse>(`/marketplace/plugins/${encodeURIComponent(id)}/uninstall`, {
+    method: "DELETE",
+  })
 }

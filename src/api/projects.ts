@@ -2,9 +2,13 @@
  * api/projects.ts — Projects, rules, triggers, jobs, stats, and activity API.
  *
  * Issue #194 (A7-S3): extracted from the monolithic client.ts.
+ * Issue #108 (Realign 2.0): switched from `request(..., "")` to
+ *   `originRequest()` so the five sibling routers mounted at the
+ *   origin root (`/projects`, `/rules`, `/triggers`, `/jobs`) honour
+ *   `settingsStore.backendUrl` in Mode 2.
  */
 
-import { request } from "./request"
+import { getOriginBase, originRequest } from "./request"
 import type { Project, Rule, Trigger } from "@/types/project"
 
 // ---------------------------------------------------------------------------
@@ -12,7 +16,7 @@ import type { Project, Rule, Trigger } from "@/types/project"
 // ---------------------------------------------------------------------------
 
 export async function listProjects(): Promise<Project[]> {
-  const res = await request<{ items: Project[]; total: number }>("/projects", undefined, "")
+  const res = await originRequest<{ items: Project[]; total: number }>("/projects")
   return Array.isArray(res?.items) ? res.items : []
 }
 
@@ -20,14 +24,14 @@ export async function createProject(
   name: string,
   description = "",
 ): Promise<Project> {
-  return request<Project>("/projects", {
+  return originRequest<Project>("/projects", {
     method: "POST",
     body: JSON.stringify({ name, description }),
-  }, "")
+  })
 }
 
 export async function deleteProjectApi(id: string): Promise<void> {
-  await request(`/projects/${id}`, { method: "DELETE" }, "")
+  await originRequest(`/projects/${id}`, { method: "DELETE" })
 }
 
 // ---------------------------------------------------------------------------
@@ -62,7 +66,7 @@ export interface ActivityResponse {
 }
 
 export async function getProjectStats(projectId: string): Promise<ProjectStats> {
-  return request<ProjectStats>(`/projects/${projectId}/stats`, undefined, "")
+  return originRequest<ProjectStats>(`/projects/${projectId}/stats`)
 }
 
 export async function getProjectActivity(
@@ -70,10 +74,8 @@ export async function getProjectActivity(
   limit = 20,
   offset = 0,
 ): Promise<ActivityResponse> {
-  return request<ActivityResponse>(
+  return originRequest<ActivityResponse>(
     `/projects/${projectId}/activity?limit=${limit}&offset=${offset}`,
-    undefined,
-    "",
   )
 }
 
@@ -82,26 +84,26 @@ export async function getProjectActivity(
 // ---------------------------------------------------------------------------
 
 export async function listRules(): Promise<Rule[]> {
-  const res = await request<{ items: Rule[] }>("/rules", undefined, "")
+  const res = await originRequest<{ items: Rule[] }>("/rules")
   return res.items
 }
 
 export async function createRuleApi(rule: Omit<Rule, "id">): Promise<Rule> {
-  return request<Rule>("/rules", {
+  return originRequest<Rule>("/rules", {
     method: "POST",
     body: JSON.stringify(rule),
-  }, "")
+  })
 }
 
 export async function updateRuleApi(id: string, rule: Omit<Rule, "id">): Promise<Rule> {
-  return request<Rule>(`/rules/${id}`, {
+  return originRequest<Rule>(`/rules/${id}`, {
     method: "PUT",
     body: JSON.stringify(rule),
-  }, "")
+  })
 }
 
 export async function deleteRuleApi(id: string): Promise<void> {
-  await request(`/rules/${id}`, { method: "DELETE" }, "")
+  await originRequest(`/rules/${id}`, { method: "DELETE" })
 }
 
 export interface NodeDefinition {
@@ -115,7 +117,7 @@ export interface NodeDefinition {
 }
 
 export async function getRuleAsNode(ruleId: string): Promise<NodeDefinition> {
-  return request<NodeDefinition>(`/rules/${ruleId}/to-node`, undefined, "")
+  return originRequest<NodeDefinition>(`/rules/${ruleId}/to-node`)
 }
 
 export async function createRuleFromNode(payload: {
@@ -125,10 +127,10 @@ export async function createRuleFromNode(payload: {
   description?: string
   scope?: string
 }): Promise<Rule> {
-  return request<Rule>("/rules/from-node", {
+  return originRequest<Rule>("/rules/from-node", {
     method: "POST",
     body: JSON.stringify(payload),
-  }, "")
+  })
 }
 
 // ---------------------------------------------------------------------------
@@ -136,30 +138,30 @@ export async function createRuleFromNode(payload: {
 // ---------------------------------------------------------------------------
 
 export async function listTriggers(): Promise<Trigger[]> {
-  const res = await request<{ items: Trigger[] }>("/triggers", undefined, "")
+  const res = await originRequest<{ items: Trigger[] }>("/triggers")
   return res.items
 }
 
 export async function createTriggerApi(trigger: Omit<Trigger, "id">): Promise<Trigger> {
-  return request<Trigger>("/triggers", {
+  return originRequest<Trigger>("/triggers", {
     method: "POST",
     body: JSON.stringify(trigger),
-  }, "")
+  })
 }
 
 export async function updateTriggerApi(id: string, trigger: Omit<Trigger, "id">): Promise<Trigger> {
-  return request<Trigger>(`/triggers/${id}`, {
+  return originRequest<Trigger>(`/triggers/${id}`, {
     method: "PUT",
     body: JSON.stringify(trigger),
-  }, "")
+  })
 }
 
 export async function deleteTriggerApi(id: string): Promise<void> {
-  await request(`/triggers/${id}`, { method: "DELETE" }, "")
+  await originRequest(`/triggers/${id}`, { method: "DELETE" })
 }
 
 export async function toggleTriggerApi(id: string): Promise<Trigger> {
-  return request<Trigger>(`/triggers/${id}/toggle`, { method: "POST" }, "")
+  return originRequest<Trigger>(`/triggers/${id}/toggle`, { method: "POST" })
 }
 
 export interface EvaluateChangeRecord {
@@ -175,17 +177,21 @@ export async function evaluateTriggerApi(
   triggerId: string,
   records: EvaluateChangeRecord[],
 ): Promise<import("@/types/project").FiredTriggerResult[]> {
-  return request(`/triggers/${triggerId}/evaluate`, {
+  return originRequest(`/triggers/${triggerId}/evaluate`, {
     method: "POST",
     body: JSON.stringify({ records }),
-  }, "")
+  })
 }
 
 export function openEvalStream(
   triggerId: string,
   onEvent: (result: import("@/types/project").FiredTriggerResult) => void,
 ): EventSource {
-  const url = `/triggers/eval-stream?trigger_id=${triggerId}`
+  // EventSource is a separate transport — compose the origin manually
+  // so Mode 2 routes to the external engine instead of same-origin.
+  // We rely on `getOriginBase()` rather than `originRequest()` because
+  // the EventSource constructor takes a URL, not a fetch wrapper.
+  const url = `${getOriginBase()}/triggers/eval-stream?trigger_id=${triggerId}`
   const es = new EventSource(url)
   es.onmessage = (e) => {
     try {
@@ -221,12 +227,12 @@ export async function createJob(payload: {
   dataset_id?: string | null
   parameters?: Record<string, unknown>
 }): Promise<JobResponse> {
-  return request<JobResponse>("/jobs", {
+  return originRequest<JobResponse>("/jobs", {
     method: "POST",
     body: JSON.stringify(payload),
-  }, "")
+  })
 }
 
 export async function getJob(id: string): Promise<JobResponse> {
-  return request<JobResponse>(`/jobs/${id}`, undefined, "")
+  return originRequest<JobResponse>(`/jobs/${id}`)
 }

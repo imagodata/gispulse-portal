@@ -5,7 +5,7 @@
  * Issue #207 (A7-S6): signal support to cancel in-flight requests.
  */
 
-import { isBackendAlive } from "./request"
+import { getCatalogBase, isBackendAlive } from "./request"
 import type {
   CatalogDomain,
   CatalogEntry,
@@ -19,8 +19,11 @@ import type {
 } from "@/types/catalog"
 import type { DatasetMeta } from "@/types/dataset"
 
-const CATALOG = "/api/catalog"
-
+/**
+ * Catalog base resolver. Re-read at every call via `getCatalogBase()` so
+ * Mode 2 ("Connect your engine") routes to the external backend instead
+ * of pinning to same-origin (#108 — Realign 2.0).
+ */
 async function catalogRequest<T>(
   path: string,
   fallback: T,
@@ -28,7 +31,7 @@ async function catalogRequest<T>(
 ): Promise<T> {
   if (!(await isBackendAlive())) return fallback
   try {
-    const res = await fetch(`${CATALOG}${path}`, { signal })
+    const res = await fetch(`${getCatalogBase()}${path}`, { signal })
     if (!res.ok) return fallback
     return res.json() as Promise<T>
   } catch (err) {
@@ -146,7 +149,7 @@ export interface CatalogImportResult {
 export async function importFromCatalog(
   params: CatalogImportParams,
 ): Promise<CatalogImportResult> {
-  const res = await fetch(`${CATALOG}/import`, {
+  const res = await fetch(`${getCatalogBase()}/import`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(params),
@@ -193,7 +196,7 @@ export async function createVirtualDataset(
   entryId: string,
   source = "worldwide",
 ): Promise<DatasetMeta> {
-  const res = await fetch(`${CATALOG}/virtual`, {
+  const res = await fetch(`${getCatalogBase()}/virtual`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ entry_id: entryId, source }),
@@ -212,7 +215,7 @@ export async function previewVirtualDataset(
 ): Promise<DatasetMeta> {
   const qs = bbox ? `?bbox=${encodeURIComponent(bbox.join(","))}` : ""
   // virtualId is a `{id:path}` param — pass verbatim, do not encodeURIComponent.
-  const res = await fetch(`${CATALOG}/virtual/${virtualId}/preview${qs}`)
+  const res = await fetch(`${getCatalogBase()}/virtual/${virtualId}/preview${qs}`)
   if (!res.ok) {
     const text = await res.text()
     throw new Error(`Virtual preview failed (${res.status}): ${text}`)
@@ -226,7 +229,7 @@ export async function materializeVirtualDataset(
   name: string,
   bbox: [number, number, number, number],
 ): Promise<CatalogImportResult> {
-  const res = await fetch(`${CATALOG}/virtual/${virtualId}/materialize`, {
+  const res = await fetch(`${getCatalogBase()}/virtual/${virtualId}/materialize`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name, bbox }),

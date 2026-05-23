@@ -1,10 +1,17 @@
 /**
  * api/schedules.ts — Scheduled pipelines endpoints.
  *
- * Routes: POST/GET/PATCH/DELETE /schedules, POST /schedules/{id}/run-now
+ * Backend mount: `/schedules` (root, NOT `/api/portal`). Routes:
+ *   POST/GET/PATCH/DELETE /schedules
+ *   POST /schedules/{id}/run-now
+ *   GET  /schedules/{id}/runs
+ *
+ * Issue #108 (Realign 2.0): switched from `request()` (which would
+ * prefix `/api/portal/`) to `originRequest()` so URLs match the actual
+ * router mount and Mode 2 honours `settingsStore.backendUrl`.
  */
 
-import { getOriginBase, request } from "./request"
+import { originRequest } from "./request"
 
 // ---------------------------------------------------------------------------
 // Types
@@ -65,47 +72,39 @@ export interface ScheduleRun {
 // API functions
 // ---------------------------------------------------------------------------
 
-//
-// `schedules_router` is mounted at the application root with its own
-// `/schedules` prefix — NOT under `/api/portal`. Every call passes
-// `getOriginBase()` to bypass the `/api/portal` suffix while still
-// honoring a Mode 2 custom backend URL.
-
 export async function listSchedules(): Promise<ScheduledPipeline[]> {
-  return request<ScheduledPipeline[]>("/schedules", undefined, getOriginBase())
+  return originRequest<ScheduledPipeline[]>("/schedules")
 }
 
 export async function getSchedule(id: string): Promise<ScheduledPipeline> {
-  return request<ScheduledPipeline>(`/schedules/${id}`, undefined, getOriginBase())
+  return originRequest<ScheduledPipeline>(`/schedules/${id}`)
 }
 
 export async function createSchedule(payload: CreateSchedulePayload): Promise<ScheduledPipeline> {
-  return request<ScheduledPipeline>(
-    "/schedules",
-    { method: "POST", body: JSON.stringify(payload) },
-    getOriginBase(),
-  )
+  return originRequest<ScheduledPipeline>("/schedules", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
 }
 
 export async function updateSchedule(
   id: string,
   payload: UpdateSchedulePayload,
 ): Promise<ScheduledPipeline> {
-  return request<ScheduledPipeline>(
-    `/schedules/${id}`,
-    { method: "PATCH", body: JSON.stringify(payload) },
-    getOriginBase(),
-  )
+  return originRequest<ScheduledPipeline>(`/schedules/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  })
 }
 
 export async function deleteSchedule(id: string): Promise<void> {
-  return request<void>(`/schedules/${id}`, { method: "DELETE" }, getOriginBase())
+  return originRequest<void>(`/schedules/${id}`, { method: "DELETE" })
 }
 
 export async function runNow(id: string): Promise<RunResult> {
-  return request<RunResult>(`/schedules/${id}/run-now`, { method: "POST" }, getOriginBase())
+  return originRequest<RunResult>(`/schedules/${id}/run-now`, { method: "POST" })
 }
 
 export async function listScheduleRuns(id: string): Promise<ScheduleRun[]> {
-  return request<ScheduleRun[]>(`/schedules/${id}/runs`, undefined, getOriginBase())
+  return originRequest<ScheduleRun[]>(`/schedules/${id}/runs`)
 }
