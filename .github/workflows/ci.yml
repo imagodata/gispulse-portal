@@ -32,3 +32,27 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  lint:
+    # Non-blocking ESLint job — measures the lint-debt backlog
+    # (estimated ~126 errors / 18 warnings post Wave 1, audit_deep_portails_2026_04_29).
+    # Drives toward zero across Realign 2.0 sprint (PR P2, P3, P4).
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: ESLint (non-blocking)
+        run: pnpm exec eslint . || true
