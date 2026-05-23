@@ -93,6 +93,20 @@ jobs:
             exit 1
           fi
 
+      - name: Verify package.json version matches pyproject.toml
+        # Runs unconditionally (both push-tag and workflow_dispatch) — npm
+        # side has historically drifted because the previous assertion
+        # only covered pyproject ↔ __init__ ↔ tag. Lockstep matters even
+        # if npm publish is not (yet) part of this workflow.
+        run: |
+          PKG_JSON_V=$(jq -r .version package.json)
+          PYPROJECT_V=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          if [ "$PKG_JSON_V" != "$PYPROJECT_V" ]; then
+            echo "::error::Version drift: package.json=$PKG_JSON_V vs pyproject.toml=$PYPROJECT_V"
+            exit 1
+          fi
+          echo "OK: both at $PKG_JSON_V"
+
       - name: Build sdist + wheel
         run: python -m build --outdir "${PY_DIST_DIR}"
 
