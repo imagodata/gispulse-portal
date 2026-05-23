@@ -1,0 +1,1 @@
+import{a as e}from"./request-DP4UNZ-j.js";var t=`/pipelines`;async function n(n){return e(`${t}/execute`,{method:`POST`,body:JSON.stringify(n)})}export{n as executePipeline};
