@@ -101,32 +101,6 @@ export function getBase(): string {
 }
 
 /**
- * Resolve the active origin **without** the `/api/portal` suffix.
- *
- * Most portal routes are mounted by the backend under `/api/portal/*`
- * (see {@link getBase}), but a handful of routers are mounted at the
- * application root with their own prefix: `marketplace_router`
- * (`/marketplace`), `pipelines_router` (`/pipelines`),
- * `schedules_router` (`/schedules`) and `relations_router`
- * (`/relations`). Those clients must target the origin directly.
- *
- *   demo / sentinel  → ""                     → fetch("/marketplace/...")
- *   custom URL       → "http://host:port"     → fetch("http://host:port/marketplace/...")
- *
- * Passing a literal `base=""` (as some legacy callers did) works for
- * the demo origin but silently breaks Mode 2 "Connect your engine":
- * the custom backend URL is dropped and the request hits same-origin.
- * `getOriginBase()` reads the store at call-time, so a backend swap in
- * the SettingsPanel is honored by the very next request.
- */
-export function getOriginBase(): string {
-  const base = getBase()
-  return base.endsWith(API_PATH_PREFIX)
-    ? base.slice(0, -API_PATH_PREFIX.length)
-    : base
-}
-
-/**
  * Backwards-compat string-coercible proxy. Existing modules import
  * `BASE` and inline it inside template literals or concatenations:
  *
