@@ -94,10 +94,9 @@ jobs:
           fi
 
       - name: Verify package.json version matches pyproject.toml
-        # Runs unconditionally (both push-tag and workflow_dispatch) — npm
-        # side has historically drifted because the previous assertion
-        # only covered pyproject ↔ __init__ ↔ tag. Lockstep matters even
-        # if npm publish is not (yet) part of this workflow.
+        # Runs unconditionally (both push-tag and workflow_dispatch). The
+        # `publish-npm` job below uses the same `package.json` version, so
+        # this guarantees PyPI ↔ npm lockstep.
         run: |
           PKG_JSON_V=$(jq -r .version package.json)
           PYPROJECT_V=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
@@ -137,7 +136,75 @@ jobs:
         with:
           packages-dir: ${{ env.PY_DIST_DIR }}
 
-  # ── 2. Create GitHub Release with sdist + wheel attached ────────────
+  # ── 2. Publish @gispulse/portal-libre to npm ────────────────────────
+  publish-npm:
+    name: Publish @gispulse/portal-libre to npm
+    needs: publish-pypi
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || inputs.dry_run == false
+    environment: npm  # Requires GH Settings → Environments → `npm` with NPM_TOKEN.
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install JS dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build SPA (pnpm build → ./dist)
+        # npm package ships `./dist` for downstream Vite consumers (see
+        # `files` in package.json). Keep build symmetric with publish-pypi.
+        run: pnpm build
+
+      - name: Assert package name and access
+        # Fail fast if someone renames the npm package or flips access to
+        # restricted by accident (we publish under the public registry).
+        run: |
+          NAME=$(jq -r .name package.json)
+          ACCESS=$(jq -r '.publishConfig.access // "default"' package.json)
+          echo "name=$NAME access=$ACCESS"
+          if [ "$NAME" != "@gispulse/portal-libre" ]; then
+            echo "::error::Unexpected npm package name: $NAME"
+            exit 1
+          fi
+          if [ "$ACCESS" != "public" ]; then
+            echo "::error::publishConfig.access must be 'public' for scoped pkg"
+            exit 1
+          fi
+
+      - name: Check npm registry for existing version (idempotent re-run)
+        # Re-running the workflow on an already-published version is a
+        # common operator action (e.g. CI flake). Detect it and skip the
+        # publish step instead of failing with E_PUBLISH_CONFLICT.
+        id: npm_exists
+        run: |
+          VERSION=$(jq -r .version package.json)
+          if npm view "@gispulse/portal-libre@${VERSION}" version 2>/dev/null; then
+            echo "Version already on npm — skipping publish."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish to npm (public, with provenance)
+        if: steps.npm_exists.outputs.skip == 'false'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        # `--provenance` requires `id-token: write` (set at workflow level)
+        # and produces a signed Sigstore attestation linking the artefact
+        # to this exact GitHub Actions run. Consumer-visible on npmjs.com.
+        run: npm publish --access public --provenance
+
+  # ── 3. Create GitHub Release with sdist + wheel attached ────────────
   github-release:
     name: Create GitHub Release
     needs: publish-pypi
